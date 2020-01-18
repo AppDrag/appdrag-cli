@@ -66,6 +66,7 @@ const funcs = {
         console.log(chalk.green(`${zip}.zip Successfully written !`))
         let inputs = await cli.PushPrompt();
         let file_content = fs.readFileSync(`./${zip}.zip`,'binary');
+        /* TODO: Implement destination path, unused at the moment */
         if (args.length === 2) {
             var destpath = '/';
         } else {
@@ -92,6 +93,7 @@ const funcs = {
             data_cleaned = cli.DataToFormURL(data);
             response_code = await cli.CallAPI(data_cleaned);
         }
+                    /* Payload creation */
         let payload = cli.PayLoadBuilder(zip,inputs.appID);
         let sign_clean = cli.DataToFormURL({command:'GetPreSignedUrl',appID:inputs.appID,token:config.get('token')});
         let response_sign = await cli.CallAPIGET(sign_clean, JSON.stringify(payload));
@@ -118,14 +120,15 @@ const funcs = {
 const main = async () => {
     var isLogged = await cli.isAuth(config);
     var args = process.argv.slice(2);
+    /* TODO: Help display */
     if (args.length == 0) {
         cli.displayHelp();
     }
-    if (!isLogged) await funcs['login']();
-    if (args[0] in funcs){
+    if (!isLogged) await funcs['login'](); // If not logged, force-login
+    if (args[0] in funcs) { //Is the first arg a valid function 
         await funcs[args[0]](args);
-    } else {
-        funcs['help']();
+    } else { //If function doesn't exist display help
+        cli.displayHelp();
     }
     return;
 }
