@@ -2,9 +2,11 @@
 const fetch = require('node-fetch');
 const inquirer = require('inquirer');
 const zip = require('bestzip');
+var FormData = require('form-data');
+
 
 module.exports = {
-    LoginPrompt: () => {
+    LoginPrompt : () => {
       const questions = [
         {
           name: 'email',
@@ -33,28 +35,32 @@ module.exports = {
       ];
       return inquirer.prompt(questions);
     },
-    CallAPI: async (data) => {
-        let response = await fetch('https://api.appdrag.com/api.aspx', {
+    CallAPI : async (data, url = 'https://api.appdrag.com/api.aspx') => {
+      if (url !== 'https://api.appdrag.com/api.aspx') {
+        var contentType = ''
+      } else {
+        var contentType = {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'}
+      }
+      console.log(contentType + 'ctype');
+      let response = await fetch(url, {
           method: 'POST', // *GET, POST, PUT, DELETE, etc.
-          headers: {
-          //   'Content-Type': 'application/json'
-          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-          },
+          headers: contentType,
           body: data // body data type must match "Content-Type" header
         });
         return await response.json();
     },
-    CallAPIGET: async (data) => {
+    CallAPIGET : async (data,payload) => {
       let response = await fetch('https://api.appdrag.com/api.aspx?'+data, {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
         headers: {
-        //   'Content-Type': 'application/json'
-        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+        'Content-Type': 'application/json'
+        //'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
+        body: payload
       });
       return await response.json();
     },
-    DataToFormURL: (data) => {
+    DataToFormURL : (data) => {
         var formBody = [];
         for (var property in data) {
             var encodedKey = encodeURIComponent(property);
@@ -64,7 +70,15 @@ module.exports = {
         formBody = formBody.join("&");
         return formBody;
     },
-    CodePrompt: () => {
+    DataToFormData : (data) => {
+      var formdata = new FormData()
+      for (var key in data) {
+        let value = data[key];
+        formdata.append(key,value);
+      }
+      return formdata;
+    },
+    CodePrompt : () => {
         const questions = [
           {
             name: 'code',
@@ -81,13 +95,13 @@ module.exports = {
         ];
         return inquirer.prompt(questions);
     },
-    isAuth: (config) => {
+    isAuth : (config) => {
         return config.get('token');
     },
-    displayHelp: () => {
+    displayHelp : () => {
         console.log('HELP');
     },
-    zipFolder: async (folder) => {
+    zipFolder : async (folder) => {
       let date = new Date();
       let dest = `appdrag-cli-deploy-${date.getDate()}${date.getMonth()}${date.getFullYear()}${date.getHours()}${date.getMinutes()}${date.getSeconds()}`;
       return zip({
@@ -99,7 +113,7 @@ module.exports = {
         return -1;
       });
     },
-    PushPrompt: () => {
+    PushPrompt : () => {
       const questions = [
         {
           name: 'appID',
@@ -115,5 +129,20 @@ module.exports = {
         },
       ];
       return inquirer.prompt(questions);
+    },
+    PayLoadBuilder : (zip,appID) => {
+      const payload = {
+        expiration: new Date().toISOString(),
+        conditions: [
+          {acl:'public-read'},
+          {bucket: 'dev.appdrag.com'},
+          {'Content-Type': "application/x-zip-compressed"},
+          {success_action_status:'200'},
+          {key: `${appID}/${zip}.zip`},
+          {'x-amz-meta-qqfilename': `${zip}.zip`},
+          ["content-length-range", '0', '300000000'],
+        ]
+      };
+      return payload;
     },
   };

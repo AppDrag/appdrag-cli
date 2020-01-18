@@ -80,7 +80,7 @@ const funcs = {
         };
         let data_cleaned = cli.DataToFormURL(data);
         data_cleaned += "&content="+file_content;
-        console.log(file_content);
+        //console.log(file_content);
         let response_code = await cli.CallAPI(data_cleaned);
         if (response_code.status == 'KO') {
             /* Refresh Token */
@@ -92,10 +92,26 @@ const funcs = {
             data_cleaned = cli.DataToFormURL(data);
             response_code = await cli.CallAPI(data_cleaned);
         }
-        let unzip_clean = cli.DataToFormURL({command:'GetPreSignedUrl',appID:inputs.appID,token:config.get('token')})
-        console.log(unzip_clean);
-        let response_unzip = await cli.CallAPIGET(unzip_clean);
-        console.log(response_unzip);
+        let payload = cli.PayLoadBuilder(zip,inputs.appID);
+        let sign_clean = cli.DataToFormURL({command:'GetPreSignedUrl',appID:inputs.appID,token:config.get('token')});
+        let response_sign = await cli.CallAPIGET(sign_clean, JSON.stringify(payload));
+        //console.log(response_sign);
+        let data_to_form = {
+            key : `${inputs.appID}/${zip}.zip`,
+            'Content-Type' : 'application/x-zip-compressed',
+            success_action_status : 200,
+            acl : 'public-read',
+            'x-amz-meta-qqfilename' : `${zip}.zip`,
+            AWSAccessKeyId : response_sign.AWSAccessKeyId,
+            policy : response_sign.policy,
+            signature : response_sign.signature,
+            file: file_content,
+        }
+        console.log(data_to_form)
+        let formdata_sign = cli.DataToFormData(data_to_form);
+        console.log(zip);
+        let fdata = await cli.CallAPI(formdata_sign, 'https://s3-eu-west-1.amazonaws.com/dev.appdrag.com')
+        console.log(fdata);
     },
 }
 
@@ -106,7 +122,11 @@ const main = async () => {
         cli.displayHelp();
     }
     if (!isLogged) await funcs['login']();
-    await funcs[args[0]](args);
+    if (args[0] in funcs){
+        await funcs[args[0]](args);
+    } else {
+        funcs['help']();
+    }
     return;
 }
 main();
