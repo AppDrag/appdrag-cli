@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 const fetch = require('node-fetch');
+const fs = require('fs');
 const inquirer = require('inquirer');
-const zip = require('bestzip');
+const archiver = require('archiver')
 var FormData = require('form-data');
 
 
@@ -37,28 +38,45 @@ module.exports = {
     },
     CallAPI : async (data, url = 'https://api.appdrag.com/api.aspx') => {
       if (url !== 'https://api.appdrag.com/api.aspx') {
-        var contentType = ''
+        var opts = {
+          method : 'PUT',
+          headers : {'Content-length' : data.len},
+          body: data.fdata
+        }
       } else {
-        var contentType = {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'}
+        var opts = {
+          method : 'POST',
+          headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+          body:data,
+        }
       }
-      console.log(contentType + 'ctype');
-      let response = await fetch(url, {
-          method: 'POST', // *GET, POST, PUT, DELETE, etc.
-          headers: contentType,
-          body: data // body data type must match "Content-Type" header
-        });
+      let response = await fetch(url, opts);
+      if (url !== 'https://api.appdrag.com/api.aspx') {
+        return await response;
+      } else {
         return await response.json();
+      }
     },
-    CallAPIGET : async (data,payload) => {
-      let response = await fetch('https://api.appdrag.com/api.aspx?'+data, {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        headers: {
-        'Content-Type': 'application/json'
-        //'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-        },
-        body: payload
-      });
-      return await response.json();
+    CallAPIGET : async (data, payload, url = 'https://api.appdrag.com/api.aspx?') => {
+      if (url === 'https://api.appdrag.com/api.aspx?') {
+        var opts = {
+          method: 'POST', // *GET, POST, PUT, DELETE, etc.
+          headers: {'Content-Type' : 'application/json'},
+          body : payload
+        };
+      } else {
+        var opts = {
+          method: 'POST', // *GET, POST, PUT, DELETE, etc.
+          headers: {'Content-Type' : 'application/x-www-form-urlencoded;charset=utf-8'},
+          body: new URLSearchParams(data),
+        };
+      }
+      let response = await fetch(url+data, opts);
+      try {
+        return await response.json();
+      } catch {
+        return await response;
+      }
     },
     DataToFormURL : (data) => {
         var formBody = [];
@@ -99,19 +117,32 @@ module.exports = {
         return config.get('token');
     },
     displayHelp : () => {
-        console.log('HELP');
+      console.log('This is the help manual for appdrag-cli :');
+      console.log('Usage : appdrag-cli <command> [args..]');
+      console.log('Available commands :\n- login (no arguments necessary)\n- init [APP_ID]\n- push [FOLDER_PATH] [DEST_FOLDER] (leave DEST_FOLDER empty to push to root \'/\'.)');
     },
-    zipFolder : async (folder) => {
-      let date = new Date();
-      let dest = `appdrag-cli-deploy-${date.getDate()}${date.getMonth()}${date.getFullYear()}${date.getHours()}${date.getMinutes()}${date.getSeconds()}`;
-      return zip({
-        source: folder,
-        destination: dest,
-      }).then(() => {
-        return dest;
-      }).catch((err) => {
-        return -1;
-      });
+    zipFolder : async (folder, dest, curFolder) => {
+      return new Promise( (resolve, reject) => {
+        if (!fs.existsSync(curFolder+'/'+folder)) {
+          reject();
+          return;
+        }
+        let output = fs.createWriteStream(curFolder+ '/' + dest);
+        var archive = archiver('zip', {
+          zlib : { level : 9 },
+        });
+        output.on('close', () => {
+          resolve(dest.replace('.zip',''));
+          return;
+        });
+        archive.on('error', function(err) {
+          reject(err);
+          return;
+        });
+        archive.pipe(output);
+        archive.directory(folder + '/', false);
+        archive.finalize();
+      })
     },
     PushPrompt : () => {
       const questions = [
