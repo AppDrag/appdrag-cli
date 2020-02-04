@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fetch = require('node-fetch');
+const https = require('https');
 const fs = require('fs');
 const inquirer = require('inquirer');
 const archiver = require('archiver')
@@ -57,20 +58,12 @@ module.exports = {
         return await response.json();
       }
     },
-    CallAPIGET : async (data, payload, url = 'https://api.appdrag.com/api.aspx?') => {
-      if (url === 'https://api.appdrag.com/api.aspx?') {
-        var opts = {
-          method: 'POST', // *GET, POST, PUT, DELETE, etc.
-          headers: {'Content-Type' : 'application/json'},
-          body : payload
-        };
-      } else {
-        var opts = {
-          method: 'POST', // *GET, POST, PUT, DELETE, etc.
-          headers: {'Content-Type' : 'application/x-www-form-urlencoded;charset=utf-8'},
-          body: new URLSearchParams(data),
-        };
-      }
+    CallAPIGET : async (data, url = 'https://api.appdrag.com/api.aspx?') => {
+      var opts = {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        headers: {'Content-Type' : 'application/x-www-form-urlencoded;charset=utf-8'},
+        body: new URLSearchParams(data),
+      };
       let response = await fetch(url+data, opts);
       try {
         return await response.json();
@@ -144,6 +137,41 @@ module.exports = {
         archive.finalize();
       })
     },
+    parseFiles : async function(data, res, curPath) {
+        console.log(curPath);
+        console.log(res);
+        for (var x = 0; x < res.length; x++) {
+          //console.log(curPath+'/'+res[x].path);
+          if (curPath == '') {
+            var newPath = res[x].path;
+          } else {
+            var newPath = curPath+'/'+res[x].path;
+          }
+          if (res[x].type == 'FOLDER') {
+            // console.log(curPath+'/'+res[x].path);
+            fs.mkdirSync(newPath);
+            data.path = newPath;
+            let newres = await this.CallAPIGET(data);
+            await this.parseFiles(data, newres, newPath);
+          } else {
+            let file = fs.createWriteStream(newPath);
+            https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath, (response) => {
+              response.pipe(file);
+              console.log('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath);
+              console.log('Writing... ' + newPath);
+              file.on('finish', () => {
+                console.log('Done ! '+ newPath);
+                file.close()
+              });
+            }).on('error', function(err) {
+              fs.unlink(newPath);
+            });
+          }
+        }
+        if (curPath == '') {
+          console.log('##########################');
+        }
+    },
     PushPrompt : () => {
       const questions = [
         {
@@ -160,20 +188,5 @@ module.exports = {
         },
       ];
       return inquirer.prompt(questions);
-    },
-    PayLoadBuilder : (zip,appID) => {
-      const payload = {
-        expiration: new Date().toISOString(),
-        conditions: [
-          {acl:'public-read'},
-          {bucket: 'dev.appdrag.com'},
-          {'Content-Type': "application/x-zip-compressed"},
-          {success_action_status:'200'},
-          {key: `${appID}/${zip}.zip`},
-          {'x-amz-meta-qqfilename': `${zip}.zip`},
-          ["content-length-range", '0', '300000000'],
-        ]
-      };
-      return payload;
     },
   };

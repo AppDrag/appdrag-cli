@@ -88,7 +88,7 @@ const funcs = {
             isErr = 1;
         });
         if (isErr !== null) {
-            console.log(chalk.red('Incorrect path specified.'));
+            console.log(chalk.red('Incorrect path. Path must be a folder.'));
             return;
         }
         console.log(chalk.green(`${curFolder}/${zip}.zip Successfully written !`));
@@ -106,7 +106,7 @@ const funcs = {
             var destpath = args[2] + '/';
         }
                 /* 
-                    Payload creation and AWS KEY + Signature + policy
+                    Get upload url and AWS KEY + Signature + policy
                                                                         */
         let getUploadUrlData = cli.DataToFormURL({command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`});
         let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData,{command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`},'http://api-dev.appdrag.com/api.aspx?');
@@ -134,12 +134,40 @@ const funcs = {
         await fetch('http://api-dev.appdrag.com/api.aspx?', opts_unzip);
         console.log(chalk.green('Success. You may need to delete the zip file in your Code Editor.'));
     },
+    pull: async (args) => {
+        var pullPath = ''
+        if (args.length == 2) {
+            pullPath = args[1];
+        }
+        if (args.length > 2) {
+            console.log(chalk.red('Too many arguments. Please read the help below.'));
+            cli.displayHelp();
+            return;
+        }
+        let appID = '';
+        if (!fs.existsSync('.appdrag')) {
+            console.log(chalk.red(`Please run the 'init' command first.`));
+            return;
+        } else {
+            let data = fs.readFileSync('.appdrag');
+            appID = JSON.parse(data).appID;
+        }
+        let data = {
+            command : 'GetDirectoryListing',
+            token : config.get('token'),
+            appID : appID,
+            path : args[1] || '',
+            order : 'name',
+        };
+        let res = await cli.CallAPIGET(data);
+        await cli.parseFiles(data, res, pullPath);
+    }
 }
 
 const main = async () => {
     var isLogged = await cli.isAuth(config);
     var args = process.argv.slice(2);
-    /* TODO: Help display */
+    /*  Help display  */
     if (args.length == 0) {
         cli.displayHelp();
         return;
