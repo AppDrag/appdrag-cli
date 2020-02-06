@@ -2,7 +2,8 @@
 const CryptoJS = require('crypto-js');
 const cli = require('./cli');
 const fs = require('fs');
-const fetch = require('node-fetch')
+const fetch = require('node-fetch');
+const https = require('https');
 const clear = require('clear');
 const chalk = require('chalk');
 const figlet = require('figlet');
@@ -109,14 +110,13 @@ const funcs = {
                     Get upload url and AWS KEY + Signature + policy
                                                                         */
         let getUploadUrlData = cli.DataToFormURL({command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`});
-        let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData,{command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`},'http://api-dev.appdrag.com/api.aspx?');
+        console.log(getUploadUrlData);
+        let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData, 'http://api-dev.appdrag.com/api.aspx?');
         for (let x = 1;getUploadUrlResponse.status == 'KO';x++) {
             console.log(chalk.cyan(`Refreshing token ${x}...`));
-            let rfrsh_data = {command:'RefreshToken', refreshToken:config.get('refreshToken')};
-            let rfrsh_clean = cli.DataToFormURL(rfrsh_data);
-            let response_rfrsh = await cli.CallAPI(rfrsh_clean);
-            config.set('token', response_rfrsh.token);
-            getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData,{command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`},'http://api-dev.appdrag.com/api.aspx?');
+            let refresh = await cli.TokenRefresh(config.get('refreshToken'));
+            config.set('token', refresh.token);
+            getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData, 'http://api-dev.appdrag.com/api.aspx?');
             if (x => 2) {
                 console.log(chalk.red('Please log-in again.'));
                 return;
@@ -131,10 +131,10 @@ const funcs = {
             headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
             body : new URLSearchParams({command:'ExtractZipS3Lambda', token:config.get('token'), appID, filekey:`${zip}.zip`, destpath: destpath})
         }
-        await fetch('http://api-dev.appdrag.com/api.aspx?', opts_unzip);
+        await fetch('https://api.appdrag.com/api.aspx?', opts_unzip);
         console.log(chalk.green('Success. You may need to delete the zip file in your Code Editor.'));
     },
-    pull: async (args) => {
+    pull : async (args) => {
         var pullPath = ''
         if (args.length == 2) {
             pullPath = args[1];
@@ -159,8 +159,119 @@ const funcs = {
             path : args[1] || '',
             order : 'name',
         };
+        if (args[1] && !fs.existsSync(args[1])) {
+            fs.mkdirSync(args[1]);
+        }
         let res = await cli.CallAPIGET(data);
         await cli.parseFiles(data, res, pullPath);
+    },
+    cloudpull : async (args) => {
+        let token = config.get('token');
+        if (args.length > 2) {
+            console.log(chalk.red('Too many arguments. Please read the help below.'));
+            cli.displayHelp();
+            return;
+        }
+
+        let appID = '';
+        if (!fs.existsSync('.appdrag')) {
+            console.log(chalk.red(`Please run the 'init' command first.`));
+            return;
+        } else {
+            let data = fs.readFileSync('.appdrag');
+            appID = JSON.parse(data).appID;
+        }
+
+        //Get all functions from appID
+        let data = {
+            command: 'CloudAPIGetFunctions',
+            token: token,
+            appID: appID,
+        };
+        let opts = {
+            method : 'POST',
+            headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+            body: new URLSearchParams(data),
+        };
+        let function_list;
+        await fetch('https://api.appdrag.com/CloudBackend.aspx', opts).then(res => res.json()).then(res => {
+            function_list = res;
+            fs.writeFileSync('.apiroutes', JSON.stringify({routes : res.Table, route : res.route}));
+        });
+        if (function_list.status == 'KO') {
+            for (let x = 1;function_list.status == 'KO';x++) {
+                console.log(chalk.cyan(`Refreshing token...`));
+                let refresh = await cli.TokenRefresh(config.get('refreshToken'));
+                config.set('token', refresh.token);
+                function_list = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
+                functions_list = await function_list.json();
+                if (x => 2) {
+                    console.log(chalk.red('Please log-in again.'));
+                    return;
+                }
+            }
+        }
+        console.log('###############')
+        cli.parseFunctions(function_list, token, appID);
+    },
+    db_pull : async (args) => {
+        let token = config.get('token');
+        let appID = '';
+        if (!fs.existsSync('.appdrag')) {
+            console.log(chalk.red(`Please run the 'init' command first.`));
+            return;
+        } else {
+            let data = fs.readFileSync('.appdrag');
+            appID = JSON.parse(data).appID;
+        }
+
+        //Get all functions from appID
+        let data = {
+            command: 'CloudDBExportFile',
+            token: token,
+            appID: appID,
+        };
+        let db_url = await cli.CallAPIGET(data, 'https://api.appdrag.com/CloudBackend.aspx');
+        console.log(db_url);
+        if (db_url.status === 'OK') {
+            db_url = db_url.url;
+        } else {
+            console.log(chalk.red('Error trying to fetch database...'));
+            return;
+        }
+        let file = fs.createWriteStream(appID+'_backup.sql');
+        https.get(db_url, (response) => {
+            if (response.headers['content-encoding'] == 'gzip') {
+                response.pipe(zlib.createGunzip().pipe(file));
+            } else {
+                response.pipe(file);
+            }
+            file.on('finish', () => {
+            console.log('Done ! '+ appID+'_backup.sql');
+            file.close();
+            });
+        }).on('error', function(err) {
+            fs.unlink(appID+'_backup.sql');
+        });
+    },
+    db_push : async (args) => {
+        let token = config.get('token');
+        let appID = '';
+        if (!fs.existsSync('.appdrag')) {
+            console.log(chalk.red(`Please run the 'init' command first.`));
+            return;
+        } else {
+            let data = fs.readFileSync('.appdrag');
+            try {
+                appID = JSON.parse(data).appID;
+            } catch {
+                console.log('nope');
+                return;
+            }
+        }
+
+        let x = fs.createReadStream(args[1]);
+        //Still cannot push file yet.
     }
 }
 
@@ -172,7 +283,7 @@ const main = async () => {
         cli.displayHelp();
         return;
     }
-    if (!isLogged) await funcs['login'](); // If not logged, force-login
+    if (!isLogged && args[0] != 'login') await funcs['login'](); // If not logged, force-login
     if (args[0] in funcs) { //Is the first arg a valid function 
         await funcs[args[0]](args);
     } else { //If function doesn't exist display help

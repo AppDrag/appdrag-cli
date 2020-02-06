@@ -5,6 +5,7 @@ const fs = require('fs');
 const inquirer = require('inquirer');
 const archiver = require('archiver')
 var FormData = require('form-data');
+const zlib = require('zlib');
 
 
 module.exports = {
@@ -64,7 +65,7 @@ module.exports = {
         headers: {'Content-Type' : 'application/x-www-form-urlencoded;charset=utf-8'},
         body: new URLSearchParams(data),
       };
-      let response = await fetch(url+data, opts);
+      let response = await fetch(url, opts);
       try {
         return await response.json();
       } catch {
@@ -149,19 +150,25 @@ module.exports = {
           }
           if (res[x].type == 'FOLDER') {
             // console.log(curPath+'/'+res[x].path);
-            fs.mkdirSync(newPath);
+            if (!fs.existsSync(newPath)) {
+              fs.mkdirSync(newPath);
+            }
             data.path = newPath;
             let newres = await this.CallAPIGET(data);
             await this.parseFiles(data, newres, newPath);
           } else {
             let file = fs.createWriteStream(newPath);
             https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath, (response) => {
-              response.pipe(file);
+              if (response.headers['content-encoding'] == 'gzip') {
+                response.pipe(zlib.createGunzip().pipe(file));
+              } else {
+                response.pipe(file);
+              }
               console.log('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath);
               console.log('Writing... ' + newPath);
               file.on('finish', () => {
                 console.log('Done ! '+ newPath);
-                file.close()
+                file.close();
               });
             }).on('error', function(err) {
               fs.unlink(newPath);
@@ -171,6 +178,53 @@ module.exports = {
         if (curPath == '') {
           console.log('##########################');
         }
+    },
+    parseFunctions : async (funcs_res, token, appID) => {
+      let route = funcs_res.route;
+      let funcs = funcs_res.Table
+      let data = {
+        command : 'CloudDBOpenCode',
+        token : token,
+        appID : appID,
+        file: 'main.js'
+      };
+      for (let x = 0; x < funcs.length; x++) {
+        if (funcs[x].contentType === 'FILE') {
+          //fs.mkdirSync(funcs[x].id);
+          data.id = funcs[x].id;
+          if (funcs[x].parentID !== -1) {
+            data.parentID = funcs[x].parentID;
+          } else {
+            delete data.parentID;
+          }
+          let opts = {
+            method : 'POST',
+            headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+            body : new URLSearchParams(data)
+          }
+          console.log(opts,data);
+          fs.mkdirSync(funcs[x].id.toString(10));
+          let file = fs.createWriteStream(funcs[x].id+'/main.js');
+          await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
+            let gunzip = zlib.createGunzip();
+            https.get(res.url, function(res) {
+              let body = '';
+              res.pipe(gunzip);
+              gunzip.on('data', function (data) {
+                  body += data;
+              });
+              gunzip.on('end', function() {
+                file.write(body);
+              });
+              file.on('finish', () => {
+                file.close()
+              });
+            });
+          });
+        } else {
+          console.log('isNotFunc');
+        }
+      };
     },
     PushPrompt : () => {
       const questions = [
@@ -189,4 +243,14 @@ module.exports = {
       ];
       return inquirer.prompt(questions);
     },
+    TokenRefresh : async (refreshToken) => {
+      let data = {command:'RefreshToken', refreshToken : refreshToken};
+      let opts = {
+        method : 'POST',
+        headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+        body : new URLSearchParams(data),
+      }
+      let response = await fetch('https://api.appdrag.com/api.aspx',opts);
+      return response.json();
+    }
   };
