@@ -3,6 +3,7 @@ const CryptoJS = require('crypto-js');
 const cli = require('./cli');
 const fs = require('fs');
 const fetch = require('node-fetch');
+var FormData = require('form-data');
 const https = require('https');
 const clear = require('clear');
 const chalk = require('chalk');
@@ -262,16 +263,32 @@ const funcs = {
             return;
         } else {
             let data = fs.readFileSync('.appdrag');
-            try {
-                appID = JSON.parse(data).appID;
-            } catch {
-                console.log('nope');
-                return;
-            }
+            appID = JSON.parse(data).appID;
         }
 
-        let x = fs.createReadStream(args[1]);
-        //Still cannot push file yet.
+        let file;
+        try {
+            file = fs.readFileSync(args[1]);
+        } catch {
+            console.log(chalk.red("File doesn't exist"));
+            return;
+        }
+
+        let form = new FormData();
+        form.append('command','CloudDBRestoreDB');
+        form.append('upload', file, args[1]);
+        form.append('appID',appID);
+        form.append('token',token);
+
+        let url = 'https://api.appdrag.com/CloudBackend.aspx'
+        form.submit(url, (err,res) => {
+            if (res.statusMessage === 'OK') {
+                console.log(chalk.green(`${args[1]} successfully uploaded !`));
+            } else {
+                console.log(chalk.red(`Error when trying to upload file`));
+            }
+        });
+
     }
 }
 
