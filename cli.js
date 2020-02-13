@@ -113,7 +113,14 @@ module.exports = {
     displayHelp : () => {
       console.log('This is the help manual for appdrag-cli :');
       console.log('Usage : appdrag-cli <command> [args..]');
-      console.log('Available commands :\n- login (no arguments necessary)\n- init [APP_ID]\n- push [FOLDER_PATH] [DEST_FOLDER] (leave DEST_FOLDER empty to push to root \'/\'.)');
+      console.log('Available commands :')
+      console.log('- login (no arguments necessary) \n\tLogin to our service')
+      console.log('- init [APP_ID] \n\tLink folder with your app-id')
+      console.log('- fs push [FOLDER_PATH] [DEST_FOLDER] (leave DEST_FOLDER empty to push to root \'/\'.) \n\tPush folder to your project files');
+      console.log('- fs pull [SOURCE_FOLDER] \n\tPull folder from your project files');
+      console.log('- db push [SQL_FILEPATH] \n\tRestore the database from the .sql backup provided');
+      console.log('- db pull \n\tDownload a .sql backup of your DB');
+      console.log('- api pull \n\tPull all functions from your CloudBackend project');
     },
     zipFolder : async (folder, dest, curFolder) => {
       return new Promise( (resolve, reject) => {
@@ -139,17 +146,13 @@ module.exports = {
       })
     },
     parseFiles : async function(data, res, curPath) {
-        console.log(curPath);
-        console.log(res);
         for (var x = 0; x < res.length; x++) {
-          //console.log(curPath+'/'+res[x].path);
           if (curPath == '') {
             var newPath = res[x].path;
           } else {
             var newPath = curPath+'/'+res[x].path;
           }
           if (res[x].type == 'FOLDER') {
-            // console.log(curPath+'/'+res[x].path);
             if (!fs.existsSync(newPath)) {
               fs.mkdirSync(newPath);
             }
@@ -164,8 +167,7 @@ module.exports = {
               } else {
                 response.pipe(file);
               }
-              console.log('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath);
-              console.log('Writing... ' + newPath);
+              console.log('Writing... ');
               file.on('finish', () => {
                 console.log('Done ! '+ newPath);
                 file.close();
@@ -174,9 +176,6 @@ module.exports = {
               fs.unlink(newPath);
             });
           }
-        }
-        if (curPath == '') {
-          console.log('##########################');
         }
     },
     parseFunctions : async (funcs_res, token, appID) => {
@@ -202,7 +201,6 @@ module.exports = {
             headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
             body : new URLSearchParams(data)
           }
-          console.log(opts,data);
           fs.mkdirSync(funcs[x].id.toString(10));
           let file = fs.createWriteStream(funcs[x].id+'/main.js');
           await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
@@ -221,8 +219,6 @@ module.exports = {
               });
             });
           });
-        } else {
-          console.log('isNotFunc');
         }
       };
     },

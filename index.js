@@ -65,7 +65,7 @@ const funcs = {
             console.log(chalk.green(`Config file successfully written, you won't need to specify your appID when pushing from this directory.`));
         });
     },
-    push : async (args) => {
+    fspush : async (args) => {
         var curFolder = process.cwd();
         if (args.length < 2) {
             console.log(chalk.red('No FOLDER_PATH supplied. Please read the help below.'));
@@ -135,7 +135,7 @@ const funcs = {
         await fetch('https://api.appdrag.com/api.aspx?', opts_unzip);
         console.log(chalk.green('Success. You may need to delete the zip file in your Code Editor.'));
     },
-    pull : async (args) => {
+    fspull : async (args) => {
         var pullPath = ''
         if (args.length == 2) {
             pullPath = args[1];
@@ -166,7 +166,7 @@ const funcs = {
         let res = await cli.CallAPIGET(data);
         await cli.parseFiles(data, res, pullPath);
     },
-    cloudpull : async (args) => {
+    apipull : async (args) => {
         let token = config.get('token');
         if (args.length > 2) {
             console.log(chalk.red('Too many arguments. Please read the help below.'));
@@ -215,7 +215,7 @@ const funcs = {
         console.log('###############')
         cli.parseFunctions(function_list, token, appID);
     },
-    db_pull : async (args) => {
+    dbpull : async (args) => {
         let token = config.get('token');
         let appID = '';
         if (!fs.existsSync('.appdrag')) {
@@ -255,7 +255,7 @@ const funcs = {
             fs.unlink(appID+'_backup.sql');
         });
     },
-    db_push : async (args) => {
+    dbpush : async (args) => {
         let token = config.get('token');
         let appID = '';
         if (!fs.existsSync('.appdrag')) {
@@ -295,6 +295,10 @@ const funcs = {
 const main = async () => {
     var isLogged = await cli.isAuth(config);
     var args = process.argv.slice(2);
+    if (args[0] !== 'login' && args[0] !== 'help' && args[0] !== 'init' && args[0]){
+        args[0] = args[0]+args[1];
+        args.splice(1,1);
+    }
     /*  Help display  */
     if (args.length == 0) {
         cli.displayHelp();
