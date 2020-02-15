@@ -147,35 +147,46 @@ module.exports = {
     },
     parseFiles : async function(data, res, curPath) {
         for (var x = 0; x < res.length; x++) {
+          //console.log(curPath+'/'+res[x].path);
           if (curPath == '') {
             var newPath = res[x].path;
           } else {
             var newPath = curPath+'/'+res[x].path;
           }
           if (res[x].type == 'FOLDER') {
-            if (!fs.existsSync(newPath)) {
-              fs.mkdirSync(newPath);
+            // console.log(curPath+'/'+res[x].path);
+            
+            try{
+                fs.mkdirSync(newPath);
+            } catch(ex){
+
             }
             data.path = newPath;
             let newres = await this.CallAPIGET(data);
             await this.parseFiles(data, newres, newPath);
-          } else {
+          } 
+          else {
             let file = fs.createWriteStream(newPath);
+            console.log('Writing... ' + (data.appID+'/'+newPath).replace(/appdrag/g, "atos"));
             https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath, (response) => {
-              if (response.headers['content-encoding'] == 'gzip') {
-                response.pipe(zlib.createGunzip().pipe(file));
-              } else {
+            
+              if ( response.headers['content-encoding'] == 'gzip' ){
+                    response.pipe(zlib.createGunzip()).pipe(file);
+              }
+              else{
                 response.pipe(file);
               }
-              console.log('Writing... ');
               file.on('finish', () => {
-                console.log('Done ! '+ newPath);
-                file.close();
+                //console.log('Done ! '+ newPath);
+                file.close()
               });
             }).on('error', function(err) {
               fs.unlink(newPath);
             });
           }
+        }
+        if (curPath == '') {
+          console.log('##########################');
         }
     },
     parseFunctions : async (funcs_res, token, appID) => {
