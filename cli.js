@@ -153,7 +153,7 @@ module.exports = {
           } else {
             var newPath = curPath+'/'+res[x].path;
           }
-          if (res[x].type == 'FOLDER') {
+          if (res[x].type == 'FOLDER' && res[x].path !== 'CloudBackend') {
             // console.log(curPath+'/'+res[x].path);
             
             try{
@@ -184,9 +184,6 @@ module.exports = {
               fs.unlink(newPath);
             });
           }
-        }
-        if (curPath == '') {
-          console.log('##########################');
         }
     },
     parseFunctions : async (funcs_res, token, appID) => {
