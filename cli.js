@@ -153,7 +153,9 @@ module.exports = {
           } else {
             var newPath = curPath+'/'+res[x].path;
           }
-          if (res[x].type == 'FOLDER' && res[x].path !== 'CloudBackend') {
+          if (res[x].path !== 'CloudBackend') {
+
+          } else if (res[x].type == 'FOLDER') {
             // console.log(curPath+'/'+res[x].path);
             
             try{
