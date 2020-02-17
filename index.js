@@ -165,12 +165,10 @@ const funcs = {
             fs.mkdirSync(args[1]);
         }
         let res = await cli.CallAPIGET(data);
-        console.log(res);
         if (res.status == 'KO') {
             for (let x = 1; res.status == 'KO'; x++) {
                 console.log(chalk.cyan(`Refreshing token...`));
                 let refresh = await cli.TokenRefresh(config.get('refreshToken'));
-                console.log(refresh)
                 config.set('token', refresh.token);
                 res = await cli.CallAPIGET(data);
                 res = await res.json();
