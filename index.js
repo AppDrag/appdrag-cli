@@ -136,6 +136,7 @@ const funcs = {
         console.log(chalk.green('Success. You may need to delete the zip file in your Code Editor.'));
     },
     fspull : async (args) => {
+        console.log('Pulling Files...')
         var pullPath = ''
         if (args.length == 2) {
             pullPath = args[1];
@@ -164,6 +165,21 @@ const funcs = {
             fs.mkdirSync(args[1]);
         }
         let res = await cli.CallAPIGET(data);
+        console.log(res);
+        if (res.status == 'KO') {
+            for (let x = 1; res.status == 'KO'; x++) {
+                console.log(chalk.cyan(`Refreshing token...`));
+                let refresh = await cli.TokenRefresh(config.get('refreshToken'));
+                console.log(refresh)
+                config.set('token', refresh.token);
+                res = await cli.CallAPIGET(data);
+                res = await res.json();
+                if (x => 2) {
+                    console.log(chalk.red('Please log-in again.'));
+                    return;
+                }
+            }
+        }
         await cli.parseFiles(data, res, pullPath);
     },
     apipull : async (args) => {
@@ -212,7 +228,6 @@ const funcs = {
                 }
             }
         }
-        console.log('###############')
         cli.parseFunctions(function_list, token, appID);
     },
     dbpull : async (args) => {
