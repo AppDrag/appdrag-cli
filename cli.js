@@ -146,48 +146,43 @@ module.exports = {
       })
     },
     parseFiles : async function(data, res, curPath) {
-        for (var x = 0; x < res.length; x++) {
-          //console.log(curPath+'/'+res[x].path);
-          let newPath;
-          if (curPath == '') {
-            newPath = res[x].path;
-          } else {
-            newPath = curPath+'/'+res[x].path;
-          }
-          if (res[x].type == 'FOLDER') {
-            if (res[x].path === 'CloudBackend'){
-              continue;
-            } else {
-          // console.log(curPath+'/'+res[x].path);
-              try{
-                  fs.mkdirSync(newPath);
-              } catch(ex){
-
-              }
-              data.path = newPath;
-              let newres = await this.CallAPIGET(data);
-              await this.parseFiles(data, newres, newPath);
-            }
-          } else {
-            let file = fs.createWriteStream(newPath);
-            console.log('Writing... ' + (data.appID+'/'+newPath).replace(/appdrag/g, "atos"));
-            https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+'/'+newPath, (response) => {
-            
-              if ( response.headers['content-encoding'] == 'gzip' ){
-                    response.pipe(zlib.createGunzip()).pipe(file);
-              }
-              else{
-                response.pipe(file);
-              }
-              file.on('finish', () => {
-                //console.log('Done ! '+ newPath);
-                file.close()
-              });
-            }).on('error', function(err) {
-              fs.unlink(newPath);
-            });
-          }
+      for (var x = 0; x < res.length; x++) {
+        let newPath;
+        if (curPath == '') {
+          newPath = res[x].path;
+        } else {
+          newPath = curPath+'/'+res[x].path;
         }
+        if (res[x].type == 'FOLDER') {
+          if (res[x].path === 'CloudBackend'){
+            continue;
+          } else {
+            try{
+                fs.mkdirSync(newPath);
+            } catch(ex){
+
+            }
+            data.path = newPath;
+            let newres = await this.CallAPIGET(data);
+            await this.parseFiles(data, newres, newPath);
+          }
+        } else {
+          let file = fs.createWriteStream(newPath);
+          console.log('Writing... ' + (data.appID+'/'+newPath).replace(/appdrag/g, "atos"));
+          https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
+            if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
+                response.pipe(zlib.createGunzip()).pipe(file);
+            } else{
+              response.pipe(file);
+            }
+            file.on('finish', () => {
+              file.close()
+            });
+          }).on('error', function(err) {
+            fs.unlink(newPath);
+          });          
+          }
+      }
     },
     parseFunctions : async (funcs_res, token, appID) => {
       let route = funcs_res.route;
