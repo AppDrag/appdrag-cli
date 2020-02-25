@@ -111,7 +111,6 @@ const funcs = {
                     Get upload url and AWS KEY + Signature + policy
                                                                         */
         let getUploadUrlData = cli.DataToFormURL({command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`});
-        console.log(getUploadUrlData);
         let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData, 'http://api-dev.appdrag.com/api.aspx?');
         for (let x = 1;getUploadUrlResponse.status == 'KO';x++) {
             console.log(chalk.cyan(`Refreshing token ${x}...`));
@@ -127,13 +126,28 @@ const funcs = {
             Uploading to AWS S3 with PreSignedURL + file content and length
                                                                                 */
         await cli.CallAPI({fdata : file_content, len : fileSizeInBytes}, getUploadUrlResponse.signedURL);
+        // Unzipping file
         let opts_unzip = {
             method : 'POST',
             headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
             body : new URLSearchParams({command:'ExtractZipS3Lambda', token:config.get('token'), appID, filekey:`${zip}.zip`, destpath: destpath})
         }
         await fetch('https://api.appdrag.com/api.aspx?', opts_unzip);
-        console.log(chalk.green('Success. You may need to delete the zip file in your Code Editor.'));
+
+        //Deleting file
+        let opts_data = {
+            command: 'DeleteFile',
+            token : config.get('token'),
+            appID,
+            filekey : `${zip}.zip`,
+        }
+        let opts_delete = {
+            method : 'POST',
+            headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+            body : new URLSearchParams(opts_data)
+        }
+        await fetch('https://api.appdrag.com/api.aspx?', opts_delete);
+        console.log(chalk.green('Success. You may need to delete the zip file in your local files.'));
     },
     fspull : async (args) => {
         console.log('Pulling Files...')
@@ -148,7 +162,7 @@ const funcs = {
         }
         let appID = '';
         if (!fs.existsSync('.appdrag')) {
-            console.log(chalk.red(`Please run the 'init' command first.`));
+            console.log(chalk.red(`Please run the 'init [APP_ID]' command first.`));
             return;
         } else {
             let data = fs.readFileSync('.appdrag');
