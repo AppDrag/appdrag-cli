@@ -179,7 +179,7 @@ module.exports = {
               file.close()
             });
           }).on('error', function(err) {
-            fs.unlink(newPath);
+            fs.unlinkSync(newPath);
           });          
           }
       }
@@ -193,6 +193,12 @@ module.exports = {
         appID : appID,
         file: 'main.js'
       };
+      if (!fs.existsSync('CloudBackend')) {
+        fs.mkdirSync('CloudBackend');
+        fs.mkdirSync('CloudBackend/code');
+      } else if (!fs.existsSync('CloudBackend/code')) {
+        fs.mkdirSync('CloudBackend/code');
+      }
       for (let x = 0; x < funcs.length; x++) {
         if (funcs[x].contentType === 'FILE') {
           //fs.mkdirSync(funcs[x].id);
@@ -207,8 +213,8 @@ module.exports = {
             headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
             body : new URLSearchParams(data)
           }
-          fs.mkdirSync(funcs[x].id.toString(10));
-          let file = fs.createWriteStream(funcs[x].id+'/main.js');
+          fs.mkdirSync('CloudBackend/code/'+funcs[x].id.toString(10));
+          let file = fs.createWriteStream('CloudBackend/code/'+funcs[x].id+'/main.js');
           await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
             let gunzip = zlib.createGunzip();
             https.get(res.url, function(res) {
