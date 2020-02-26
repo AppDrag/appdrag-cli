@@ -120,7 +120,7 @@ module.exports = {
       console.log('- fs pull [SOURCE_FOLDER] \n\tPull folder from your project files');
       console.log('- db push [SQL_FILEPATH] \n\tRestore the database from the .sql backup provided');
       console.log('- db pull \n\tDownload a .sql backup of your DB');
-      console.log('- api pull \n\tPull all functions from your CloudBackend project');
+      console.log('- api pull [optional: FUNC_ID]\n\tPull all functions from your CloudBackend project');
     },
     zipFolder : async (folder, dest, curFolder) => {
       return new Promise( (resolve, reject) => {
@@ -184,7 +184,7 @@ module.exports = {
           }
       }
     },
-    parseFunctions : async (funcs_res, token, appID) => {
+    parseFunctions : async (funcs_res, token, appID, func = false) => {
       let route = funcs_res.route;
       let funcs = funcs_res.Table
       let data = {
@@ -200,6 +200,9 @@ module.exports = {
         fs.mkdirSync('CloudBackend/code');
       }
       for (let x = 0; x < funcs.length; x++) {
+        if (func && funcs[x].id != func) {
+            continue;
+        }
         if (funcs[x].contentType === 'FILE') {
           //fs.mkdirSync(funcs[x].id);
           data.id = funcs[x].id;

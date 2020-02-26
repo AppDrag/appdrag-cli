@@ -225,7 +225,6 @@ const funcs = {
         let function_list;
         await fetch('https://api.appdrag.com/CloudBackend.aspx', opts).then(res => res.json()).then(res => {
             function_list = res;
-            fs.writeFileSync('.apiroutes', JSON.stringify({routes : res.Table, route : res.route}));
         });
         if (function_list.status == 'KO') {
             for (let x = 1;function_list.status == 'KO';x++) {
@@ -233,14 +232,19 @@ const funcs = {
                 let refresh = await cli.TokenRefresh(config.get('refreshToken'));
                 config.set('token', refresh.token);
                 function_list = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
-                functions_list = await function_list.json();
+                function_list = await function_list.json();
                 if (x => 2) {
                     console.log(chalk.red('Please log-in again.'));
                     return;
                 }
             }
         }
-        cli.parseFunctions(function_list, token, appID);
+        fs.writeFileSync('.apiroutes', JSON.stringify({routes : function_list.Table, route : function_list.route}));
+        if (args[1]) {
+            cli.parseFunctions(function_list, token, appID, args[1]);
+        } else {
+            cli.parseFunctions(function_list, token, appID);    
+        }
     },
     dbpull : async (args) => {
         let token = config.get('token');
