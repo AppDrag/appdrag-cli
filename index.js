@@ -98,7 +98,6 @@ const funcs = {
         let fileSizeInBytes = fs.statSync(`./${zip}.zip`);
         fileSizeInBytes = fileSizeInBytes.size;
 
-        /* TODO: Implement destination path, unused at the moment */
         if (args.length === 2) {
             var destpath = '';
         } else {
@@ -111,12 +110,12 @@ const funcs = {
                     Get upload url and AWS KEY + Signature + policy
                                                                         */
         let getUploadUrlData = cli.DataToFormURL({command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`${zip}.zip`});
-        let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData, 'http://api-dev.appdrag.com/api.aspx?');
+        let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData);
         for (let x = 1;getUploadUrlResponse.status == 'KO';x++) {
             console.log(chalk.cyan(`Refreshing token ${x}...`));
             let refresh = await cli.TokenRefresh(config.get('refreshToken'));
             config.set('token', refresh.token);
-            getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData, 'http://api-dev.appdrag.com/api.aspx?');
+            getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData);
             if (x => 2) {
                 console.log(chalk.red('Please log-in again.'));
                 return;
@@ -245,6 +244,78 @@ const funcs = {
         } else {
             cli.parseFunctions(function_list, token, appID);    
         }
+    },
+    apipush : async (args) => {
+        let curFolder = process.cwd();
+        //Get APPID and TOKEN
+        let token = config.get('token');
+        if (args.length > 2) {
+            console.log(chalk.red('Too many arguments. Please read the help below.'));
+            cli.displayHelp();
+            return;
+        }
+
+        let appID = '';
+        if (!fs.existsSync('.appdrag')) {
+            console.log(chalk.red(`Please run the 'init' command first.`));
+            return;
+        } else {
+            let data = fs.readFileSync('.appdrag');
+            appID = JSON.parse(data).appID;
+        }
+
+        // Zip correct function folder
+        let func = false;
+        let basePath = 'CloudBackend/code/'
+        let folders = fs.readdirSync(basePath);
+        if (args[1]) {
+            func = args[1];
+        }
+        folders.forEach(async (folder) => {
+            if (func && folder !== func) {
+                return;
+            }
+            let zip = await cli.zipFolder(basePath+folder, `${appID}_${folder}.zip`, curFolder).catch((err) => {
+                console.log(err);
+            });
+            console.log(chalk.green(`Zip archive created !`));
+            let file_content = fs.createReadStream(`./${zip}.zip`);
+            let fileSizeInBytes = fs.statSync(`./${zip}.zip`);
+            fileSizeInBytes = fileSizeInBytes.size;
+
+        // Get URL + Key
+            let getUploadUrlData = cli.DataToFormURL({command:'GetUploadUrl',token:config.get('token'),appID:appID,filekey:`CloudBackend/api/${zip}.zip`});
+            let getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData);
+            for (let x = 1; getUploadUrlResponse.status == 'KO'; x++) {
+                console.log(chalk.cyan(`Refreshing token ${x}...`));
+                let refresh = await cli.TokenRefresh(config.get('refreshToken'));
+                config.set('token', refresh.token);
+                getUploadUrlResponse = await cli.CallAPIGET(getUploadUrlData);
+                if (x => 2) {
+                    console.log(chalk.red('Please log-in again.'));
+                    return;
+                }
+            }
+            //sending on aws
+            console.log(chalk.green(`Pushing...`));
+            await cli.CallAPI({fdata : file_content, len : fileSizeInBytes}, getUploadUrlResponse.signedURL);
+            let data = {
+                command : 'CloudAPIRestoreAPI',
+                token : config.get('token'),
+                appID : appID,
+                version : '',
+                functionID : folder,
+            }
+
+            //restore api
+            let res = await cli.CallAPIGET(data, 'https://api.appdrag.com/CloudBackend.aspx');
+            if (res.status == 'OK') {
+                fs.unlinkSync(zip+'.zip');
+                console.log(chalk.green(`${folder} has been updated !`));
+            } else {
+                console.log(chalk.green(`Error updating ${folder}.`));
+            }
+        });
     },
     dbpull : async (args) => {
         let token = config.get('token');

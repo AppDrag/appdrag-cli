@@ -5,14 +5,22 @@ Install with:
 `npm install -g https://github.com/AppDrag/appdrag-deploy-cli`
 
 
-This is the help manual for appdrag-cli :
-Usage : appdrag-cli <command> [args..]
-
+appdrag-cli v1.00
+Usage  : appdrag-cli command <args>
 Available commands :
-- login (no arguments necessary) Login to our service
-- init [APP_ID] Link folder with your app-id
-- fs push [FOLDER_PATH] [DEST_FOLDER] (leave DEST_FOLDER empty to push to root '/'.) Push folder to your project files
-- fs pull [PATH] (leave PATH empty to pull root '/') Pull folder from your project files
-- api pull (no arguments necessary), Pull all functions from your CloudBackend project
-- db pull (no arguments necessary), Download a .sql backup of your DB
-- db push [SQLBACKUP_PATH], restore the database from the .sql backup provided
+
+-- Setup
+?  login                                        Login to our service
+?  init                 <app-id>                        Link folder with your app-id
+
+-- Filesystem
+?  fs push      <folder-to-push> <opt: dest>    Push folder to your project files
+?  fs pull      <source-folder>                 Pull folder from your project files
+
+-- Database - CloudBackend
+?  db push      <sql-file>                      Restore the database from the .sql backup provided
+?  db pull                                      Retrieves .sql file of your database
+
+-- Api - CloudBackend
+?  api push     <opt: function_id>              Pull all (or one) function(s) from your CloudBackend
+?  api pull     <opt: function_id>              Push all (or one) function(s) of your CloudBackend

@@ -6,6 +6,8 @@ const inquirer = require('inquirer');
 const archiver = require('archiver')
 var FormData = require('form-data');
 const zlib = require('zlib');
+const chalk = require('chalk');
+const unzipper = require('unzipper');
 
 
 module.exports = {
@@ -111,16 +113,21 @@ module.exports = {
         return config.get('token');
     },
     displayHelp : () => {
-      console.log('This is the help manual for appdrag-cli :');
-      console.log('Usage : appdrag-cli <command> [args..]');
-      console.log('Available commands :')
-      console.log('- login (no arguments necessary) \n\tLogin to our service')
-      console.log('- init [APP_ID] \n\tLink folder with your app-id')
-      console.log('- fs push [FOLDER_PATH] [DEST_FOLDER] (leave DEST_FOLDER empty to push to root \'/\'.) \n\tPush folder to your project files');
-      console.log('- fs pull [SOURCE_FOLDER] \n\tPull folder from your project files');
-      console.log('- db push [SQL_FILEPATH] \n\tRestore the database from the .sql backup provided');
-      console.log('- db pull \n\tDownload a .sql backup of your DB');
-      console.log('- api pull [optional: FUNC_ID]\n\tPull all functions from your CloudBackend project');
+      console.log(chalk.underline('appdrag-cli v1.00'));
+      console.log(chalk.bold('Usage'),' : appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'));
+      console.log(chalk.bold('Available commands :'));
+      console.log(chalk.blue('\n-- Setup'));
+      console.log('? ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
+      console.log('? ', chalk.yellow('init'), '\t<app-id> \t\t\tLink folder with your app-id')
+      console.log(chalk.blue('\n-- Filesystem'));
+      console.log('? ', chalk.yellow('fs push'), ' \t<folder-to-push> <opt: dest>\tPush folder to your project files');
+      console.log('? ', chalk.yellow('fs pull'), ' \t<source-folder> \t\tPull folder from your project files');
+      console.log(chalk.blue('\n-- Database - CloudBackend'));
+      console.log('? ', chalk.yellow('db push'), ' \t<sql-file> \t\t\tRestore the database from the .sql backup provided');
+      console.log('? ', chalk.yellow('db pull'), ' \t\t\t\t\tRetrieves .sql file of your database');
+      console.log(chalk.blue('\n-- Api - CloudBackend'));
+      console.log('? ', chalk.yellow('api push'), ' \t<opt: function_id>\t\tPull all (or one) function(s) from your CloudBackend');
+      console.log('? ', chalk.yellow('api pull'), ' \t<opt: function_id>\t\tPush all (or one) function(s) of your CloudBackend');
     },
     zipFolder : async (folder, dest, curFolder) => {
       return new Promise( (resolve, reject) => {
@@ -185,57 +192,57 @@ module.exports = {
       }
     },
     parseFunctions : async (funcs_res, token, appID, func = false) => {
-      let route = funcs_res.route;
-      let funcs = funcs_res.Table
-      let data = {
-        command : 'CloudDBOpenCode',
-        token : token,
-        appID : appID,
-        file: 'main.js'
-      };
-      if (!fs.existsSync('CloudBackend')) {
-        fs.mkdirSync('CloudBackend');
-        fs.mkdirSync('CloudBackend/code');
-      } else if (!fs.existsSync('CloudBackend/code')) {
-        fs.mkdirSync('CloudBackend/code');
-      }
-      for (let x = 0; x < funcs.length; x++) {
-        if (func && funcs[x].id != func) {
-            continue;
+        let funcs = funcs_res.Table
+        let data = {
+            command : 'CloudAPIExportFile',
+            token : token,
+            appID : appID,
+            file: 'main.js'
+        };
+        if (!fs.existsSync('CloudBackend')) {
+            fs.mkdirSync('CloudBackend');
+            fs.mkdirSync('CloudBackend/code');
+        } else if (!fs.existsSync('CloudBackend/code')) {
+            fs.mkdirSync('CloudBackend/code');
         }
-        if (funcs[x].contentType === 'FILE') {
-          //fs.mkdirSync(funcs[x].id);
-          data.id = funcs[x].id;
-          if (funcs[x].parentID !== -1) {
-            data.parentID = funcs[x].parentID;
-          } else {
-            delete data.parentID;
-          }
-          let opts = {
-            method : 'POST',
-            headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
-            body : new URLSearchParams(data)
-          }
-          fs.mkdirSync('CloudBackend/code/'+funcs[x].id.toString(10));
-          let file = fs.createWriteStream('CloudBackend/code/'+funcs[x].id+'/main.js');
-          await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
-            let gunzip = zlib.createGunzip();
-            https.get(res.url, function(res) {
-              let body = '';
-              res.pipe(gunzip);
-              gunzip.on('data', function (data) {
-                  body += data;
-              });
-              gunzip.on('end', function() {
-                file.write(body);
-              });
-              file.on('finish', () => {
-                file.close()
-              });
+        for (let x = 0; x < funcs.length; x++) {
+            if (func && funcs[x].id != func) {
+                continue;
+            }
+            if (funcs[x].contentType === 'FILE') {
+            let path = 'CloudBackend/code/'+ funcs[x].id.toString(10);
+            //fs.mkdirSync(funcs[x].id);
+            data.functionID = funcs[x].id;
+            if (funcs[x].parentID !== -1) {
+                data.parentID = funcs[x].parentID;
+            } else {
+                delete data.parentID;
+            }
+            let opts = {
+                method : 'POST',
+                headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+                body : new URLSearchParams(data)
+            };
+            if (!fs.existsSync(path)) {
+                fs.mkdirSync(path);
+            }
+            let filePath = path + '/' + appID +'_'+funcs[x].id+'.zip';
+            let file = fs.createWriteStream(filePath);
+            await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
+                https.get(res.url, function(res) {
+                    res.pipe(file);
+                    file.on('finish', () => {
+                        console.log(chalk.green('Done writing ' + appID +'_'+funcs[x].id+'.zip'));
+                        console.log(chalk.green('Unzipping now...'));
+                        fs.createReadStream(filePath)
+                        .pipe(unzipper.Extract({ path: path }));
+                        file.close();
+                        fs.unlinkSync(filePath);
+                    });
+                });
             });
-          });
-        }
-      };
+            }
+        };
     },
     PushPrompt : () => {
       const questions = [
