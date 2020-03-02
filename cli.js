@@ -211,38 +211,38 @@ module.exports = {
             if (func && funcs[x].id != func) {
                 continue;
             }
-            if (funcs[x].contentType === 'FILE') {
-            let path = 'CloudBackend/code/'+ funcs[x].id.toString(10);
-            //fs.mkdirSync(funcs[x].id);
-            data.functionID = funcs[x].id;
-            if (funcs[x].parentID !== -1) {
-                data.parentID = funcs[x].parentID;
-            } else {
-                delete data.parentID;
-            }
-            let opts = {
-                method : 'POST',
-                headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
-                body : new URLSearchParams(data)
-            };
-            if (!fs.existsSync(path)) {
-                fs.mkdirSync(path);
-            }
-            let filePath = path + '/' + appID +'_'+funcs[x].id+'.zip';
-            let file = fs.createWriteStream(filePath);
-            await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
-                https.get(res.url, function(res) {
-                    res.pipe(file);
-                    file.on('finish', () => {
-                        console.log(chalk.green('Done writing ' + appID +'_'+funcs[x].id+'.zip'));
-                        console.log(chalk.green('Unzipping now...'));
-                        fs.createReadStream(filePath)
-                        .pipe(unzipper.Extract({ path: path }));
-                        file.close();
-                        fs.unlinkSync(filePath);
+            if (funcs[x].contentType !== 'FOLDER') {
+                let path = 'CloudBackend/code/'+ funcs[x].id.toString(10);
+                //fs.mkdirSync(funcs[x].id);
+                data.functionID = funcs[x].id;
+                if (funcs[x].parentID !== -1) {
+                    data.parentID = funcs[x].parentID;
+                } else {
+                    delete data.parentID;
+                }
+                let opts = {
+                    method : 'POST',
+                    headers : {'Content-Type' :'application/x-www-form-urlencoded;charset=utf-8'},
+                    body : new URLSearchParams(data)
+                };
+                if (!fs.existsSync(path)) {
+                    fs.mkdirSync(path);
+                }
+                let filePath = path + '/' + appID +'_'+funcs[x].id+'.zip';
+                let file = fs.createWriteStream(filePath);
+                await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
+                    https.get(res.url, function(res) {
+                        res.pipe(file);
+                        file.on('finish', () => {
+                            console.log(chalk.green('Done writing ' + appID +'_'+funcs[x].id+'.zip'));
+                            console.log(chalk.green('Unzipping now...'));
+                            fs.createReadStream(filePath)
+                            .pipe(unzipper.Extract({ path: path }));
+                            file.close();
+                            fs.unlinkSync(filePath);
+                        });
                     });
                 });
-            });
             }
         };
     },
