@@ -191,7 +191,7 @@ module.exports = {
                     console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
                     fs.closeSync(fs.openSync(newPath, 'w'));
                 }
-            } else if (response.headers['content-length'] > 0){
+            } else if (response.headers['content-encoding'] != 'gzip' && response.headers['content-length'] > 0){
               response.pipe(file);
             } else {
                 console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
