@@ -8,7 +8,7 @@ var FormData = require('form-data');
 const zlib = require('zlib');
 const chalk = require('chalk');
 const unzipper = require('unzipper');
-
+const figlet = require('figlet');
 
 module.exports = {
     LoginPrompt : () => {
