@@ -113,23 +113,28 @@ module.exports = {
         return config.get('token');
     },
     displayHelp : () => {
-      console.log(chalk.underline('appdrag-cli v1.00'));
-      console.log(chalk.bold('Usage'),' : appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'));
-      console.log(chalk.bold('Available commands :'));
-      console.log(chalk.blue('\n-- Setup'));
-      console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
-      console.log('  ', chalk.yellow('init'), '\t<app-id> \t\t\tLink folder with your app-id')
-      console.log(chalk.blue('\n-- Filesystem'));
-      console.log('  ', chalk.yellow('fs push'), ' \t<folder-to-push> <opt: dest>\tPush folder to your project files');
-      console.log('  ', chalk.yellow('fs pull'), ' \t<source-folder> \t\tPull folder from your project files');
-      console.log(chalk.blue('\n-- Database - CloudBackend'));
-      console.log('  ', chalk.yellow('db push'), ' \t<sql-file> \t\t\tRestore the database from the .sql backup provided');
-      console.log('  ', chalk.yellow('db pull'), ' \t\t\t\t\tRetrieves .sql file of your database');
-      console.log(chalk.blue('\n-- Api - CloudBackend'));
-      console.log('  ', chalk.yellow('api push'), ' \t<opt: function_id>\t\tPull all (or one) function(s) from your CloudBackend');
-      console.log('  ', chalk.yellow('api pull'), ' \t<opt: function_id>\t\tPush all (or one) function(s) of your CloudBackend');
-      console.log(chalk.blue('\n-- Help'));
-      console.log('  ', chalk.yellow('help'), ' \t\t\t\t\tDisplays this help text');
+        console.log(
+            chalk.magenta(
+            figlet.textSync('AppDrag', { horizontalLayout: 'fitted' })
+            )
+        );
+        console.log(chalk.underline('appdrag-cli v1.00'));
+        console.log(chalk.bold('Usage'),' : appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'));
+        console.log(chalk.bold('Available commands :'));
+        console.log(chalk.blue('\n-- Setup'));
+        console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
+        console.log('  ', chalk.yellow('init'), '\t<app-id> \t\t\tLink folder with your app-id')
+        console.log(chalk.blue('\n-- Filesystem'));
+        console.log('  ', chalk.yellow('fs push'), ' \t<folder-to-push> <opt: dest>\tPush folder to your project files');
+        console.log('  ', chalk.yellow('fs pull'), ' \t<source-folder> \t\tPull folder from your project files');
+        console.log(chalk.blue('\n-- Database - CloudBackend'));
+        console.log('  ', chalk.yellow('db push'), ' \t<sql-file> \t\t\tRestore the database from the .sql backup provided');
+        console.log('  ', chalk.yellow('db pull'), ' \t\t\t\t\tRetrieves .sql file of your database');
+        console.log(chalk.blue('\n-- Api - CloudBackend'));
+        console.log('  ', chalk.yellow('api push'), ' \t<opt: function_id>\t\tPull all (or one) function(s) from your CloudBackend');
+        console.log('  ', chalk.yellow('api pull'), ' \t<opt: function_id>\t\tPush all (or one) function(s) of your CloudBackend');
+        console.log(chalk.blue('\n-- Help'));
+        console.log('  ', chalk.yellow('help'), ' \t\t\t\t\tDisplays this help text');
     },
     zipFolder : async (folder, dest, curFolder) => {
       return new Promise( (resolve, reject) => {
