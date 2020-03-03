@@ -186,8 +186,11 @@ module.exports = {
           https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
             if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
                 response.pipe(zlib.createGunzip()).pipe(file);
-            } else{
+            } else if (response.headers['content-length'] > 0){
               response.pipe(file);
+            } else {
+                console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
+                fs.closeSync(fs.openSync(newPath, 'w'));
             }
             file.on('finish', () => {
               file.close()
@@ -245,8 +248,10 @@ module.exports = {
                                 fs.createReadStream(filePath)
                                 .pipe(unzipper.Extract({ path: path }));
                                 file.close();
-                                fs.unlinkSync(filePath);
                             });
+                            file.on('close', () => {
+                                fs.unlinkSync(filePath);
+                            })
                         }
                     });
                 });

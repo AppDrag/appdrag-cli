@@ -184,7 +184,6 @@ const funcs = {
                 let refresh = await cli.TokenRefresh(config.get('refreshToken'));
                 config.set('token', refresh.token);
                 res = await cli.CallAPIGET(data);
-                res = await res.json();
                 if (x => 2) {
                     console.log(chalk.red('Please log-in again.'));
                     return;
