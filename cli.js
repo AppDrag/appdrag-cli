@@ -114,7 +114,7 @@ module.exports = {
     },
     displayHelp : () => {
         console.log(
-            chalk.magenta(
+            chalk.blue(
             figlet.textSync('AppDrag', { horizontalLayout: 'fitted' })
             )
         );
@@ -185,7 +185,12 @@ module.exports = {
           console.log('Writing... ' + (data.appID+'/'+newPath).replace(/appdrag/g, "atos"));
           https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
             if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
-                response.pipe(zlib.createGunzip()).pipe(file);
+                try {
+                    response.pipe(zlib.createGzip()).pipe(file);
+                } catch {
+                    console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
+                    fs.closeSync(fs.openSync(newPath, 'w'));
+                }
             } else if (response.headers['content-length'] > 0){
               response.pipe(file);
             } else {
