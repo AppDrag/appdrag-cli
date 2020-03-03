@@ -195,7 +195,6 @@ module.exports = {
                     fs.writeFileSync(newPath, body, 'utf8');
                 });
             } else if (response.headers['content-length'] > 0){
-                console.log('merde biote bite bite bite ' + newPath)
                 response.pipe(file);
             } else {
                 console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
