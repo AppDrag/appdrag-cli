@@ -181,18 +181,22 @@ module.exports = {
             await this.parseFiles(data, newres, newPath);
           }
         } else {
-          let file = fs.createWriteStream(newPath);
+          let file = fs.createWriteStream(newPath, {encoding: 'utf8'});
           console.log('Writing... ' + (data.appID+'/'+newPath).replace(/appdrag/g, "atos"));
+          let gunzip = zlib.createGunzip();
           https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
             if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
-                try {
-                    response.pipe(zlib.createGzip()).pipe(file);
-                } catch {
-                    console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
-                    fs.closeSync(fs.openSync(newPath, 'w'));
-                }
-            } else if (response.headers['content-encoding'] != 'gzip' && response.headers['content-length'] > 0){
-              response.pipe(file);
+                let body = '';
+                response.pipe(gunzip);
+                gunzip.on('data', (data)=> {
+                    body += data;
+                })
+                gunzip.on('end', () => {
+                    fs.writeFileSync(newPath, body, 'utf8');
+                });
+            } else if (response.headers['content-length'] > 0){
+                console.log('merde biote bite bite bite ' + newPath)
+                response.pipe(file);
             } else {
                 console.log(chalk.yellow(newPath + ' Empty, creating an empty file'));
                 fs.closeSync(fs.openSync(newPath, 'w'));
