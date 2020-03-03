@@ -232,15 +232,17 @@ module.exports = {
                 let file = fs.createWriteStream(filePath);
                 await fetch('https://api.appdrag.com/CloudBackend.aspx',opts).then(res => res.json()).then(res => {
                     https.get(res.url, function(res) {
-                        res.pipe(file);
-                        file.on('finish', () => {
-                            console.log(chalk.green('Done writing ' + appID +'_'+funcs[x].id+'.zip'));
-                            console.log(chalk.green('Unzipping now...'));
-                            fs.createReadStream(filePath)
-                            .pipe(unzipper.Extract({ path: path }));
-                            file.close();
-                            fs.unlinkSync(filePath);
-                        });
+                        if (res.headers['content-length'] > 0) {
+                            res.pipe(file);
+                            file.on('finish', () => {
+                                console.log(chalk.green('Done writing ' + appID +'_'+funcs[x].id+'.zip'));
+                                console.log(chalk.green('Unzipping now...'));
+                                fs.createReadStream(filePath)
+                                .pipe(unzipper.Extract({ path: path }));
+                                file.close();
+                                fs.unlinkSync(filePath);
+                            });
+                        }
                     });
                 });
             }
