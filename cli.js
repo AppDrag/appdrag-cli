@@ -186,18 +186,18 @@ module.exports = {
           let gunzip = zlib.createGunzip();
           https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
             if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
-                try {
-                    let body = '';
-                    response.pipe(gunzip);
-                    gunzip.on('data', (data)=> {
-                        body += data;
-                    })
-                    gunzip.on('end', () => {
-                        fs.writeFileSync(newPath, body, 'utf8');
-                    });
-                } catch {
-                    console.log(chalk.red('Error writing ' + newPath));
-                }
+                let body = '';
+                response.pipe(gunzip);
+                gunzip.on('data', (data)=> {
+                    body += data;
+                })
+                gunzip.on('end', () => {
+                    fs.writeFileSync(newPath, body, 'utf8');
+                });
+                gunzip.on('error', (err) => {
+                    console.log(chalk.red(`Error writing ${newPath}. File may be corrupted. \nCreating an empty file`));
+                    fs.closeSync(fs.openSync(newPath, 'w'));
+                });
             } else if (response.headers['content-length'] > 0){
                 response.pipe(file);
             } else {
