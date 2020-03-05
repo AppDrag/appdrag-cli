@@ -181,10 +181,10 @@ module.exports = {
             await this.parseFiles(data, newres, newPath);
           }
         } else {
-          let file = fs.createWriteStream(newPath, {encoding: 'utf8'});
-          console.log('Writing... ' + ('./'+newPath).replace(/appdrag/g, "atos"));
-          let gunzip = zlib.createGunzip();
-          https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
+            let file = fs.createWriteStream(newPath, {encoding: 'utf8'});
+            console.log('Writing... ' + ('./'+newPath).replace(/appdrag/g, "atos"));
+            let gunzip = zlib.createGunzip();
+            https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
             if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
                 let body = '';
                 response.pipe(gunzip);
@@ -207,10 +207,10 @@ module.exports = {
             file.on('finish', () => {
               file.close()
             });
-          }).on('error', function(err) {
-            fs.unlinkSync(newPath);
-          });          
-          }
+            }).on('error', function(err) {
+                fs.unlinkSync(newPath);
+            });
+        }
       }
     },
     create_script : async (api_data) => {
