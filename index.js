@@ -224,20 +224,28 @@ const funcs = {
         await fetch('https://api.appdrag.com/CloudBackend.aspx', opts).then(res => res.json()).then(res => {
             function_list = res;
         });
+        console.log(function_list);
         if (function_list.status == 'KO') {
+            if (function_list.error == 'Invalid App') {
+                console.log(chalk.red(`Invalid app-id specified. Please run the 'init' command once more.`))
+                return;
+            }
             for (let x = 1;function_list.status == 'KO';x++) {
                 console.log(chalk.cyan(`Refreshing token...`));
                 let refresh = await cli.TokenRefresh(config.get('refreshToken'));
                 config.set('token', refresh.token);
+                data.token = config.get('token');
+                opts.body = new URLSearchParams(data);
                 function_list = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
                 function_list = await function_list.json();
                 if (x => 2) {
-                    console.log(chalk.red('Please log-in again.'));
+                    console.log(chalk.red('Please login again.'));
                     return;
                 }
             }
         }
-        fs.writeFileSync('.apiroutes', JSON.stringify({routes : function_list.Table, route : function_list.route}));
+        cli.create_script(function_list.Table);
+        fs.writeFileSync('api.json', JSON.stringify({routes : function_list.Table, route : function_list.route}));
         if (args[1]) {
             cli.parseFunctions(function_list, token, appID, args[1]);
         } else {

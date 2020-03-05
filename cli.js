@@ -213,6 +213,20 @@ module.exports = {
           }
       }
     },
+    create_script : async (api_data) => {
+        let modules = [];
+        api_data.forEach(func => {
+            if (func.libs) {
+                let libs = JSON.parse(func.libs);
+                libs.forEach(lib => {
+                    if (modules.indexOf(lib) < 0) {
+                        modules.push(lib);
+                    }
+                });
+            }
+        });
+        fs.writeFileSync('./install.sh', 'npm install ' + modules.join().replace(/,/g, " "));
+    },
     parseFunctions : async (funcs_res, token, appID, func = false) => {
         let funcs = funcs_res.Table
         let data = {
@@ -256,14 +270,15 @@ module.exports = {
                             res.pipe(file);
                             file.on('finish', () => {
                                 console.log(chalk.green('Done writing ' + appID +'_'+funcs[x].id+'.zip'));
-                                console.log(chalk.green('Unzipping now...'));
-                                fs.createReadStream(filePath)
-                                .pipe(unzipper.Extract({ path: path }));
                                 file.close();
                             });
                             file.on('close', () => {
-                                fs.unlinkSync(filePath);
-                            })
+                                console.log(chalk.green('Unzipping now...'));
+                                fs.createReadStream(filePath)
+                                .pipe(unzipper.Extract({ path: path })).on('end', () => {
+                                    fs.unlinkSync(filePath);
+                                });
+                            });
                         }
                     });
                 });
