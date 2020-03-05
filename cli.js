@@ -182,7 +182,7 @@ module.exports = {
           }
         } else {
           let file = fs.createWriteStream(newPath, {encoding: 'utf8'});
-          console.log('Writing... ' + (data.appID+'/'+newPath).replace(/appdrag/g, "atos"));
+          console.log('Writing... ' + ('./'+newPath).replace(/appdrag/g, "atos"));
           let gunzip = zlib.createGunzip();
           https.get('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/'+data.appID+ '/' + newPath, (response) => {
             if ( response.headers['content-encoding'] == 'gzip' && response.headers['content-length'] > 0){
@@ -225,7 +225,7 @@ module.exports = {
                 });
             }
         });
-        fs.writeFileSync('./install.sh', 'npm install ' + modules.join().replace(/,/g, " "));
+        fs.writeFileSync('./install.sh', 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
     },
     parseFunctions : async (funcs_res, token, appID, func = false) => {
         let funcs = funcs_res.Table
@@ -275,7 +275,7 @@ module.exports = {
                             file.on('close', () => {
                                 console.log(chalk.green('Unzipping now...'));
                                 fs.createReadStream(filePath)
-                                .pipe(unzipper.Extract({ path: path })).on('end', () => {
+                                .pipe(unzipper.Extract({ path: path })).on('close', () => {
                                     fs.unlinkSync(filePath);
                                 });
                             });
