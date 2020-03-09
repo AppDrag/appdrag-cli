@@ -22,5 +22,6 @@
     "node-fetch": "^2.6.0",
     "unzipper": "^0.10.9",
     "zlib": "^1.0.5"
-  }
+  },
+  "devDependencies": {}
 }
