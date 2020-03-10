@@ -158,10 +158,9 @@ module.exports = {
       archive.finalize();
     })
   },
-  parseFiles: function (data, res, curPath, lastfile) {
+  parseFiles: function (data, res, curPath, lastfile, deploy) {
     return new Promise(async(resolve, reject) => {
       for (var x = 0; x < res.length; x++) {
-        console.log(res[x].path);
         let newPath;
         if (curPath == '') {
           newPath = res[x].path;
@@ -182,6 +181,12 @@ module.exports = {
             await this.parseFiles(data, newres, newPath, newPath+'/'+newlastfile);
           }
         } else {
+          if (deploy) {
+            const regex = RegExp(/(.html|.js|.xml|.css|.txt)$/gm);
+            if (fs.existsSync(newPath) && regex.test(newPath)) {
+              continue;
+            }
+          }
           let file = fs.createWriteStream(newPath, { encoding: 'utf8' });
           console.log('Writing... ' + ('./' + newPath).replace(/appdrag/g, "atos"));
           let response = await fetch('https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/' + data.appID + '/' + newPath, {
@@ -202,9 +207,9 @@ module.exports = {
       }
     });
   },
-  getFiles: function (data, res, path, lastfile) {
+  getFiles: function (data, res, path, lastfile, deploy = false) {
     return new Promise(async (resolve, reject) => {
-    await this.parseFiles(data, res, path, lastfile);
+    await this.parseFiles(data, res, path, lastfile, deploy);
     return resolve();
     });
   },
@@ -222,26 +227,39 @@ module.exports = {
     });
     fs.writeFileSync('./install.sh', 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
   },
-  parseFunctions: async (funcs_res, token, appID, func = false) => {
-    let funcs = funcs_res.Table
+  parseFunctions: async (funcs_res, token, appID, folderName, func = false) => {
+    let mainPaths = {
+      id : ['CloudBackend','code'],
+      name : [func, 'api']
+    };
+    if (folderName === 'name') {
+      let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', {
+        method:'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        body: new URLSearchParams({command:'CloudDBGetSecretKey', token: token, appID: appID})
+      });
+      res = await res.json();
+      var APIKEY = res.secret_key;
+    }
+    let funcs = funcs_res.Table;
     let data = {
       command: 'CloudAPIExportFile',
       token: token,
       appID: appID,
       file: 'main.js'
     };
-    if (!fs.existsSync('CloudBackend')) {
-      fs.mkdirSync('CloudBackend');
-      fs.mkdirSync('CloudBackend/code');
-    } else if (!fs.existsSync('CloudBackend/code')) {
-      fs.mkdirSync('CloudBackend/code');
+    if (!fs.existsSync(mainPaths[folderName].join('/'))) {
+      fs.mkdirSync(mainPaths[folderName][0]);
+      fs.mkdirSync(mainPaths[folderName].join('/'));
+    } else if (!fs.existsSync(mainPaths[folderName].join('/'))) {
+      fs.mkdirSync(mainPaths[folderName].join('/'));
     }
     for (let x = 0; x < funcs.length; x++) {
-      if (func && funcs[x].id != func) {
+      if (func && funcs[x].id != func && folderName === 'id') {
         continue;
       }
       if (funcs[x].contentType !== 'FOLDER') {
-        let path = 'CloudBackend/code/' + funcs[x].id.toString(10);
+        let path = mainPaths[folderName].join('/') + '/' + funcs[x][folderName].toString(10);
         //fs.mkdirSync(funcs[x].id);
         data.functionID = funcs[x].id;
         if (funcs[x].parentID !== -1) {
@@ -256,6 +274,20 @@ module.exports = {
         };
         if (!fs.existsSync(path)) {
           fs.mkdirSync(path);
+        }
+        if (folderName === 'name') {
+          let envFile = fs.createWriteStream(path+'/'+'.env');
+          envFile.write('APIKEY='+APIKEY);
+          if (funcs[x].envVars) {
+            let envVars = JSON.parse(funcs[x].envVars)
+            delete envVars.APPID;
+            delete envVars.APIKEY;
+            if (Object.keys(envVars).length > 0) {
+              Object.keys(envVars).forEach(val => {
+                envFile.write('\n'+val+'='+envVars[val]);
+              });
+            }
+          }
         }
         let filePath = path + '/' + appID + '_' + funcs[x].id + '.zip';
         let file = fs.createWriteStream(filePath);
@@ -272,6 +304,9 @@ module.exports = {
                 fs.createReadStream(filePath)
                   .pipe(unzipper.Extract({ path: path })).on('close', () => {
                     fs.unlinkSync(filePath);
+                    if (folderName === 'name' && fs.existsSync(path+'/'+'main.zip')) {
+                      fs.unlinkSync(path+'/'+'main.zip');
+                    }
                   });
               });
             }

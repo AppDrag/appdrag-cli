@@ -255,9 +255,9 @@ const funcs = {
         console.log(chalk.yellow('Invalid function ID provided.'));
         return;
       }
-      cli.parseFunctions(function_list, token, appID, args[1]);
+      cli.parseFunctions(function_list, token, appID, 'id', args[1]);
     } else {
-      cli.parseFunctions(function_list, token, appID);
+      cli.parseFunctions(function_list, token, appID, 'id');
     }
     cli.create_script(function_list.Table);
     fs.writeFileSync('api.json', JSON.stringify({ routes: function_list.Table, route: function_list.route }));
@@ -454,7 +454,7 @@ const funcs = {
     /**
      * Replace .html src to local ones
      */
-     await cli.getFiles(data, res, '', lastfile).then(()=>{
+     await cli.getFiles(data, res, '', lastfile, true).then(()=>{
       let files = fs.readdirSync('.');
       files.forEach((file) => {
         if (file.slice(-5) == '.html') {
@@ -463,8 +463,67 @@ const funcs = {
       });
     });
     console.log(chalk.green('Everything done !'));
+  },
+  deployapi: async (args) => {
+    let token = config.get('token');
+    if (args.length > 2) {
+      console.log(chalk.red('Too many arguments. Please read the help below.'));
+      cli.displayHelp();
+      return;
+    }
+
+    let appID = '';
+    if (!fs.existsSync('.appdrag')) {
+      console.log(chalk.red(`Please run the 'init' command first.`));
+      return;
+    } else {
+      let data = fs.readFileSync('.appdrag');
+      appID = JSON.parse(data).appID;
+    }
+
+    //Get all functions from appID
+    let data = {
+      command: 'CloudAPIGetFunctions',
+      token: token,
+      appID: appID,
+    };
+    let opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+      body: new URLSearchParams(data),
+    };
+    let function_list;
+    await fetch('https://api.appdrag.com/CloudBackend.aspx', opts).then(res => res.json()).then(res => {
+      function_list = res;
+    });
+    if (function_list.status == 'KO') {
+      if (function_list.error == 'Invalid App') {
+        console.log(chalk.red(`Invalid app-id specified. Please run the 'init' command once more.`))
+        return;
+      }
+      for (let x = 1; function_list.status == 'KO'; x++) {
+        console.log(chalk.cyan(`Refreshing token...`));
+        let refresh = await cli.TokenRefresh(config.get('refreshToken'));
+        config.set('token', refresh.token);
+        data.token = config.get('token');
+        opts.body = new URLSearchParams(data);
+        function_list = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
+        function_list = await function_list.json();
+        if (x => 2) {
+          console.log(chalk.red('Please login again.'));
+          return;
+        }
+      }
+    }
+    cli.parseFunctions(function_list, token, appID, 'name', args[1]);
+    cli.create_script(function_list.Table);
+    fs.writeFileSync('api.json', JSON.stringify({ routes: function_list.Table, route: function_list.route }));
   }
 }
+
+/**
+ * @todo > ENVIRONNEMENT;
+ */
 
 const main = async () => {
   var isLogged = await cli.isAuth(config);
