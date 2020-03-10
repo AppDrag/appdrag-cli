@@ -161,7 +161,7 @@ module.exports = {
       archive.finalize();
     })
   },
-  parseFiles: function (data, res, curPath, lastfile, deploy) {
+  parseFiles: function (data, res, curPath, lastfile, deploy = false) {
     return new Promise(async(resolve, reject) => {
       for (var x = 0; x < res.length; x++) {
         let newPath;
@@ -181,13 +181,14 @@ module.exports = {
             let newres = await this.CallAPIGET(data);
             // console.log(newres,newPath,curPath)
             let newlastfile = newres[newres.length - 1].path;
-            await this.parseFiles(data, newres, newPath, newPath+'/'+newlastfile);
+            await this.parseFiles(data, newres, newPath, newPath+'/'+newlastfile, deploy);
           }
         } else {
           if (deploy) {
             const regex = RegExp(/(.html|.js|.xml|.css|.txt)$/gm);
             if (fs.existsSync(newPath) && !(regex.test(newPath))) {
-              continue;
+              if (x+1 === res.length) resolve();
+              else continue;
             }
           }
           let file = fs.createWriteStream(newPath, { encoding: 'utf8' });
@@ -212,8 +213,8 @@ module.exports = {
   },
   getFiles: function (data, res, path, lastfile, deploy = false) {
     return new Promise(async (resolve, reject) => {
-    await this.parseFiles(data, res, path, lastfile, deploy);
-    return resolve();
+      await this.parseFiles(data, res, path, lastfile, deploy);
+      return resolve();
     });
   },
   create_script: async (api_data) => {
@@ -318,6 +319,30 @@ module.exports = {
       }
     };
   },
+  downloadResources: () => {
+    return new Promise(async(resolve, reject) => {
+      let urls = [
+        'https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/css/appdrag.css',
+        'https://cf.appdrag.com/resources/appallin-universal-theme.css',
+        'https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/js/appdrag.js'
+      ];
+      for (let x = 0; x < urls.length ;x++) {
+        let path = urls[x].replace(/.*resources\//g, "");
+        let file = fs.createWriteStream(path, { encoding: 'utf8' });
+        let response = await fetch(urls[x], {
+          method: 'GET',
+        });
+        response.body.pipe(file);
+        file.on('finish', () => {
+          console.log('done ! ' + path);
+          if (path === urls[urls.length - 1].replace(/.*resources\//g, "")) {
+            resolve();
+          }
+          file.close();
+        });
+      }
+    });
+  },
   PushPrompt: () => {
     const questions = [
       {
@@ -351,8 +376,10 @@ module.exports = {
       let regexp = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appID}/`,"g");
       let regexp2 = new RegExp(`https://cf.appdrag.com/${appID}/`,"g")
       let regexp3 = new RegExp(`//cf.appdrag.com/${appID}/`, "g");
+      let regexp4 = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/`,"g");
+      let regexp5 = new RegExp('//cf.appdrag.com/resources/',"g");
       file_content = file_content.toString('utf-8');
-      file_content = file_content.replace(regexp, "./").replace(regexp2,'./').replace(regexp3,'./');
+      file_content = file_content.replace(regexp, "./").replace(regexp2,'./').replace(regexp3,'./').replace(regexp4, './').replace(regexp5, './');
       fs.writeFileSync(filePath, file_content);
     }
   }

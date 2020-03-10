@@ -455,6 +455,7 @@ const funcs = {
      * Replace .html src to local ones
      */
      await cli.getFiles(data, res, '', lastfile, true).then(()=>{
+      console.log(chalk.green('Project files done !'));
       let files = fs.readdirSync('.');
       files.forEach((file) => {
         if (file.slice(-5) == '.html') {
@@ -462,7 +463,9 @@ const funcs = {
         }
       });
     });
-    console.log(chalk.green('Everything done !'));
+    cli.downloadResources().then(() => {
+      console.log(chalk.green('Resources done !'));
+    });
   },
   deployapi: async (args) => {
     let token = config.get('token');
