@@ -135,6 +135,7 @@ module.exports = {
     console.log(chalk.blue('\n-- Deploy'));
     console.log('  ', chalk.yellow('deploy fs'), ' \t<path>\t\t\t\tDeploys all your non-CloudBackend related files to the specified folder');
     console.log('  ', chalk.yellow('deploy api'), ' \t<path>\t\t\t\tDeploys all the functions from your CloudBackend to the specified folder');
+    console.log('  ', chalk.yellow('deploy db'), ' \t<path>\t\t\t\tDeploys the database from your CloudBackend to the specified folder');
     console.log(chalk.blue('\n-- Help'));
     console.log('  ', chalk.yellow('help'), ' \t\t\t\t\tDisplays this help text');
   },
