@@ -352,7 +352,6 @@ const funcs = {
       appID: appID,
     };
     let db_url = await cli.CallAPIGET(data, 'https://api.appdrag.com/CloudBackend.aspx');
-    console.log(db_url);
     if (db_url.status === 'OK') {
       db_url = db_url.url;
     } else {
@@ -521,6 +520,46 @@ const funcs = {
     cli.parseFunctions(function_list, token, appID, 'name', args[1]);
     cli.create_script(function_list.Table);
     fs.writeFileSync('api.json', JSON.stringify({ routes: function_list.Table, route: function_list.route }));
+  },
+  deploydb: async(args) => {
+    let token = config.get('token');
+    let appID = '';
+    if (!fs.existsSync('.appdrag')) {
+      console.log(chalk.red(`Please run the 'init' command first.`));
+      return;
+    } else {
+      let data = fs.readFileSync('.appdrag');
+      appID = JSON.parse(data).appID;
+    }
+
+    if (args[1]) {
+      if (!(fs.existsSync(args[1]))) {
+        fs.mkdirSync(args[1]);
+      }
+    }
+    //Get all functions from appID
+    let data = {
+      command: 'CloudDBExportFile',
+      token: token,
+      appID: appID,
+    };
+    let db_url = await cli.CallAPIGET(data, 'https://api.appdrag.com/CloudBackend.aspx');
+    if (db_url.status === 'OK') {
+      db_url = db_url.url;
+    } else {
+      console.log(chalk.red('Error trying to fetch database...'));
+      return;
+    }
+    let path = 'backup.sql';
+    if (args[1]) {
+      path = args[1] + '/' + 'backup.sql';
+    }
+    let file = fs.createWriteStream(path);
+    let response = await fetch(db_url,{method: "GET"});
+    response.body.pipe(file);
+    file.on('finish', () => {
+      console.log(chalk.green('Done pulling database'));
+    });
   }
 }
 
