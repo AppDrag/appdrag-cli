@@ -280,7 +280,7 @@ module.exports = {
           fs.mkdirSync(path);
         }
         if (folderName === 'name') {
-          let envFile = fs.createWriteStream(path+'/'+'.env');
+          let envFile = fs.createWriteStream(path+'/.env');
           envFile.write('APIKEY='+APIKEY);
           if (funcs[x].envVars) {
             let envVars = JSON.parse(funcs[x].envVars)
@@ -291,6 +291,12 @@ module.exports = {
                 envFile.write('\n'+val+'='+envVars[val]);
               });
             }
+          }
+          if (funcs[x].type === 'SQLSELECT') {
+            console.log(chalk.green('Writing SQLSELECT function :' + funcs[x].name + '...'))
+            fs.writeFileSync(path + '/main.json', JSON.stringify(funcs[x]));
+            fs.writeFileSync(path + '/main.sql', funcs[x].sourceCode);
+            continue;
           }
         }
         let filePath = path + '/' + appID + '_' + funcs[x].id + '.zip';
