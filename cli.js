@@ -186,7 +186,7 @@ module.exports = {
         } else {
           if (deploy) {
             const regex = RegExp(/(.html|.js|.xml|.css|.txt)$/gm);
-            if (fs.existsSync(newPath) && !regex.test(newPath)) {
+            if (fs.existsSync(newPath) && !(regex.test(newPath))) {
               continue;
             }
           }
