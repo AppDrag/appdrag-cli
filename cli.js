@@ -233,6 +233,11 @@ module.exports = {
     fs.writeFileSync('./install.sh', 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
   },
   parseFunctions: async (funcs_res, token, appID, folderName, func = false) => {
+    if (folderName === 'name') {
+      if (func === '.') {
+        func = '';
+      }
+    }
     let mainPaths = {
       id : ['CloudBackend','code'],
       name : [func, 'api']
@@ -253,8 +258,10 @@ module.exports = {
       appID: appID,
       file: 'main.js'
     };
+    if (mainPaths[folderName][0] === '') {
+      mainPaths[folderName].shift();
+    }
     if (!fs.existsSync(mainPaths[folderName].join('/'))) {
-      fs.mkdirSync(mainPaths[folderName][0]);
       fs.mkdirSync(mainPaths[folderName].join('/'));
     } else if (!fs.existsSync(mainPaths[folderName].join('/'))) {
       fs.mkdirSync(mainPaths[folderName].join('/'));
@@ -263,7 +270,8 @@ module.exports = {
       if (func && funcs[x].id != func && folderName === 'id') {
         continue;
       }
-      if (funcs[x].contentType !== 'FOLDER') {
+      if (funcs[x].type !== 'FOLDER') {
+        console.log(funcs[x].type);
         let path = mainPaths[folderName].join('/') + '/' + funcs[x][folderName].toString(10);
         //fs.mkdirSync(funcs[x].id);
         data.functionID = funcs[x].id;
@@ -298,6 +306,8 @@ module.exports = {
             fs.writeFileSync(path + '/main.json', JSON.stringify(funcs[x]));
             fs.writeFileSync(path + '/main.sql', funcs[x].sourceCode);
             continue;
+          } else {
+            fs.writeFileSync(path + '/backup.json', JSON.stringify(funcs[x]));
           }
         }
         let filePath = path + '/' + appID + '_' + funcs[x].id + '.zip';
@@ -315,8 +325,9 @@ module.exports = {
                 fs.createReadStream(filePath)
                   .pipe(unzipper.Extract({ path: path })).on('close', () => {
                     fs.unlinkSync(filePath);
-                    if (folderName === 'name' && fs.existsSync(path+'/'+'main.zip')) {
+                    if (folderName === 'name' && fs.existsSync(path+'/'+'main.zip') && fs.existsSync(path+'/'+'backup.csv')) {
                       fs.unlinkSync(path+'/'+'main.zip');
+                      fs.unlinkSync(path+'/'+'backup.csv');
                     }
                   });
               });
