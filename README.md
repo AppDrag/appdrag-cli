@@ -1,8 +1,10 @@
-# AppDrag-Deploy CLI
+# appdrag-cLI
+A CLI tool for appdrag.com, deploy your full-stack apps to the cloud
 
 ## Installation
 
-Install with npm install -g https://github.com/AppDrag/appdrag-deploy-cli
+Install with 
+`npm install -g https://github.com/AppDrag/appdrag-cli`
 
 ## Commands
 
