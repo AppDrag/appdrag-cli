@@ -262,6 +262,9 @@ module.exports = {
       mainPaths[folderName].shift();
     }
     if (!fs.existsSync(mainPaths[folderName].join('/'))) {
+      if (folderName === 'id') {
+        fs.mkdirSync(mainPaths[folderName][0])
+      }
       fs.mkdirSync(mainPaths[folderName].join('/'));
     } else if (!fs.existsSync(mainPaths[folderName].join('/'))) {
       fs.mkdirSync(mainPaths[folderName].join('/'));
@@ -271,15 +274,23 @@ module.exports = {
         continue;
       }
       if (funcs[x].type !== 'FOLDER') {
+        let path = '';
         console.log(funcs[x].type);
-        let path = mainPaths[folderName].join('/') + '/' + funcs[x][folderName].toString(10);
-        //fs.mkdirSync(funcs[x].id);
-        data.functionID = funcs[x].id;
+        path = mainPaths[folderName].join('/') + '/' + funcs[x][folderName].toString(10);
         if (funcs[x].parentID !== -1) {
+          if (folderName === 'name') {
+            path = mainPaths[folderName].join('/') + '/' + funcs.find(folder => folder.id === funcs[x].parentID).name + '/' + funcs[x][folderName].toString(10);
+            if (!fs.existsSync(mainPaths[folderName].join('/') + '/' + funcs.find(folder => folder.id === funcs[x].parentID).name + '/')) {
+              fs.mkdirSync(mainPaths[folderName].join('/') + '/' + funcs.find(folder => folder.id === funcs[x].parentID).name + '/');
+            } 
+          }
+          if (!fs.existsSync())
           data.parentID = funcs[x].parentID;
         } else {
           delete data.parentID;
         }
+        //fs.mkdirSync(funcs[x].id);
+        data.functionID = funcs[x].id;
         let opts = {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
@@ -322,14 +333,16 @@ module.exports = {
               });
               file.on('close', () => {
                 console.log(chalk.green('Unzipping now...'));
+                console.log(path,funcs[x].id);
                 fs.createReadStream(filePath)
                   .pipe(unzipper.Extract({ path: path })).on('close', () => {
-                    fs.unlinkSync(filePath);
+                    // fs.unlinkSync(filePath);
                     if (folderName === 'name' && fs.existsSync(path+'/'+'main.zip') && fs.existsSync(path+'/'+'backup.csv')) {
                       fs.unlinkSync(path+'/'+'main.zip');
                       fs.unlinkSync(path+'/'+'backup.csv');
                     }
-                  });
+                  })
+                  .on('error', (err => console.log(err)));
               });
             }
           });
@@ -360,6 +373,44 @@ module.exports = {
         });
       }
     });
+  },
+  apiJson: (api, appId) => {
+    console.log(api);
+    let finalObj = {
+      appId: appId,
+      funcs : {
+        '/' : []
+      }
+    };
+    api.forEach(func => {
+      if (func.type === 'FOLDER') {
+        finalObj.funcs[func.name] = {
+          id : func.id
+        };
+      }
+    });
+    api.forEach(func => {
+      if (func.type !== 'FOLDER') {
+        if (func.parentID !== -1) {
+          let folder = api.find(elem => {
+            return elem.id === func.parentID;
+          }).name;
+          finalObj.funcs[folder] = [];
+          finalObj.funcs[folder].push({
+            id: func.id,
+            name: func.name,
+            method: func.method,
+          });
+        } else {
+          finalObj.funcs['/'].push({
+            id: func.id,
+            name: func.name,
+            method: func.method,
+          });
+        }
+      }
+    });
+    return JSON.stringify(finalObj);
   },
   PushPrompt: () => {
     const questions = [
