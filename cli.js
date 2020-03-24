@@ -399,13 +399,23 @@ module.exports = {
           finalObj.funcs[folder].push({
             id: func.id,
             name: func.name,
+            description: func.description,
+            type: func.type,
             method: func.method,
+            ram: func.ram,
+            timeout: func.timeout,
+            output: func.output
           });
         } else {
           finalObj.funcs['/'].push({
             id: func.id,
             name: func.name,
+            description: func.description,
+            type: func.type,
             method: func.method,
+            ram: func.ram,
+            timeout: func.timeout,
+            output: func.output
           });
         }
       }
