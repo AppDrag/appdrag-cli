@@ -275,7 +275,6 @@ module.exports = {
       }
       if (funcs[x].type !== 'FOLDER') {
         let path = '';
-        console.log(funcs[x].type);
         path = mainPaths[folderName].join('/') + '/' + funcs[x][folderName].toString(10);
         if (funcs[x].parentID !== -1) {
           if (folderName === 'name') {
@@ -333,10 +332,9 @@ module.exports = {
               });
               file.on('close', () => {
                 console.log(chalk.green('Unzipping now...'));
-                console.log(path,funcs[x].id);
                 fs.createReadStream(filePath)
                   .pipe(unzipper.Extract({ path: path })).on('close', () => {
-                    // fs.unlinkSync(filePath);
+                    fs.unlinkSync(filePath);
                     if (folderName === 'name' && fs.existsSync(path+'/'+'main.zip') && fs.existsSync(path+'/'+'backup.csv')) {
                       fs.unlinkSync(path+'/'+'main.zip');
                       fs.unlinkSync(path+'/'+'backup.csv');
@@ -375,7 +373,6 @@ module.exports = {
     });
   },
   apiJson: (api, appId) => {
-    console.log(api);
     let finalObj = {
       appId: appId,
       funcs : {
