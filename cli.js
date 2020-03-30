@@ -311,7 +311,7 @@ module.exports = {
               });
             }
           }
-          if (funcs[x].type === 'SQLSELECT') {
+          if (funcs[x].type === 'SQLSELECT' || funcs[x].contentType === 'SQL') {
             console.log(chalk.green('Writing SQLSELECT function :' + funcs[x].name + '...'))
             fs.writeFileSync(path + '/main.json', JSON.stringify(funcs[x]));
             fs.writeFileSync(path + '/main.sql', funcs[x].sourceCode);
