@@ -124,14 +124,14 @@ module.exports = {
     console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
     console.log('  ', chalk.yellow('init'), '\t<app-id> \t\t\tLink folder with your app-id')
     console.log(chalk.blue('\n-- Filesystem'));
-    console.log('  ', chalk.yellow('fs push'), ' \t<folder-to-push> <opt: dest>\tPush folder to your project files');
-    console.log('  ', chalk.yellow('fs pull'), ' \t<source-folder> \t\tPull folder from your project files');
+    console.log('  ', chalk.yellow('fs pull'), ' \t<source-folder> \t\tPull folder from SERVER to LOCAL');
+    console.log('  ', chalk.yellow('fs push'), ' \t<folder-to-push> <opt: dest>\tPush folder from LOCAL to SERVER');
     console.log(chalk.blue('\n-- Database - CloudBackend'));
-    console.log('  ', chalk.yellow('db push'), ' \t<sql-file> \t\t\tRestore the database from the .sql backup provided');
     console.log('  ', chalk.yellow('db pull'), ' \t\t\t\t\tRetrieves .sql file of your database');
+    console.log('  ', chalk.yellow('db push'), ' \t<sql-file> \t\t\tRestore the database from the .sql backup provided');
     console.log(chalk.blue('\n-- Api - CloudBackend'));
-    console.log('  ', chalk.yellow('api push'), ' \t<opt: function_id>\t\tPull all (or one) function(s) from your CloudBackend');
-    console.log('  ', chalk.yellow('api pull'), ' \t<opt: function_id>\t\tPush all (or one) function(s) of your CloudBackend');
+    console.log('  ', chalk.yellow('api pull'), ' \t<opt: function_id>\t\tPull all (or one) function(s) from CloudBackend to LOCAL');
+    console.log('  ', chalk.yellow('api push'), ' \t<opt: function_id>\t\tPush all (or one) function(s) from LOCAL to CloudBackend');
     console.log(chalk.blue('\n-- Deploy'));
     console.log('  ', chalk.yellow('deploy fs'), ' \t<path>\t\t\t\tDeploys all your non-CloudBackend related files to the specified folder');
     console.log('  ', chalk.yellow('deploy api'), ' \t<path>\t\t\t\tDeploys all the functions from your CloudBackend to the specified folder');
