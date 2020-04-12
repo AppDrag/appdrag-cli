@@ -23,24 +23,25 @@ Available commands :
    
 
 ### Filesystem
-
-   `fs push  	<folder-to-push> <opt: dest>`	Push folder to your project files
+  
+   `fs pull  	<source-folder>` 		         Pull folder from SERVER to LOCAL
    
-   `fs pull  	<source-folder>` 		         Pull folder from your project files
+   `fs push  	<folder-to-push> <opt: dest>`	Push folder from LOCAL to SERVER
    
 
 ### Database - CloudBackend
 
-   `db push  	<sql-file>` 			            Restore the database from the .sql backup provided
+   `db pull` 					                     Retrieves .sql file of your database from SERVER to LOCAL
    
-   `db pull` 					                     Retrieves .sql file of your database
+   `db push  	<sql-file>` 			            Restore the database on SERVER from the LOCAL .sql backup provided
    
 
 ### Api - CloudBackend
 
-   `api push  	<opt: function_id>`		        Pull all (or one) function(s) from your CloudBackend
+   `api pull  	<opt: function_id>`		        Pull all (or one) function(s) of your CloudBackend to LOCAL
    
-   `api pull  	<opt: function_id>`		        Push all (or one) function(s) of your CloudBackend
+   `api push  	<opt: function_id>`		        Push all (or one) function(s) from LOCAL to your CloudBackend
+   
    
 ### Deployment
 
