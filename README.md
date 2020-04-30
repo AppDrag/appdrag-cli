@@ -1,8 +1,8 @@
-# AppDrag-Deploy CLI
+# AppDrag CLI
 
 ## Installation
 
-Install with npm install -g https://github.com/AppDrag/appdrag-deploy-cli
+Install with `npm install -g https://github.com/AppDrag/appdrag-cli`
 
 ## Commands
 

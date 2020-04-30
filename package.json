@@ -1,9 +1,9 @@
 {
   "name": "appdrag-cli",
-  "bin": "./index.js",
+  "bin": "./src/index.js",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,7 +16,6 @@
     "clear": "^0.1.0",
     "configstore": "^5.0.0",
     "crypto-js": "^3.1.9-1",
-    "figlet": "^1.2.4",
     "form-data": "^3.0.0",
     "inquirer": "^7.0.3",
     "node-fetch": "^2.6.0",
