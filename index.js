@@ -41,6 +41,7 @@ const funcs = {
     let response_code = await cli.CallAPI(data_cleaned);
     if (!('Table' in response_code)) {
       console.log(chalk.redBright('Incorrect code'));
+      return;
     }
     let user_data = {
       token: response_code.Table[0].token,
@@ -517,9 +518,13 @@ const funcs = {
         }
       }
     }
-    cli.parseFunctions(function_list, token, appID, 'name', args[1]);
+    if (args[1] === undefined) {
+      cli.parseFunctions(function_list, token, appID, 'name', '.');
+    } else {
+      cli.parseFunctions(function_list, token, appID, 'name', args[1]);
+    }
     cli.create_script(function_list.Table);
-    fs.writeFileSync('api.json', JSON.stringify({ routes: function_list.Table, route: function_list.route }));
+    fs.writeFileSync('api.json', cli.apiJson(function_list.Table, appID));
   },
   deploydb: async(args) => {
     let token = config.get('token');
