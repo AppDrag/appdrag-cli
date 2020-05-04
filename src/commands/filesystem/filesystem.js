@@ -1,6 +1,6 @@
 const chalk = require('chalk')
 const { setupCheck, currFolder, config, refreshToken } = require('../../utils/common');
-const { createZip, pushFiles, getDirectoryListing, parseDirectory } =  require('../../utils/filesystem/filesystem')
+const { createZip, pushFiles, getDirectoryListing, parseDirectory, pullSingleFile } =  require('../../utils/filesystem/filesystem')
 
 const pushFilesystem = async (args) => {
   if (args.length < 3) {
@@ -55,6 +55,10 @@ const pullFilesystem = async (args) => {
       console.log(chalk.red('Please log-in again'));
       return;
     }
+  }
+  if (files.length === 0) {
+    await pullSingleFile(appId, pathToPull);
+    return;
   }
   let lastfile = files[files.length - 1].path;
   await parseDirectory(token, appId, files, lastfile, '');

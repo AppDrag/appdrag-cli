@@ -165,4 +165,21 @@ const isFolder = async (token, appId, folder, path) => {
   return newFiles;
 }
 
-module.exports = { zipFolder, createZip, pushFiles, getDirectoryListing, parseDirectory, getSignedURL, pushToAwsS3 };
+const pullSingleFile = async (appId, path) => {
+  let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${path}`, {
+    method: 'GET'
+  });
+  if (response.status === 403) {
+    console.log(chalk.red('File/folder does not exist.'));
+    return;
+  } else {
+    let file = fs.createWriteStream(path, {'encoding': 'utf-8'});
+    response.body.pipe(file);
+    file.on('finish', () => {
+      console.log(chalk.green(`done writing : ${path}`));
+      file.close();
+    });
+  }
+}
+
+module.exports = { zipFolder, createZip, pushFiles, getDirectoryListing, parseDirectory, getSignedURL, pushToAwsS3, pullSingleFile };
