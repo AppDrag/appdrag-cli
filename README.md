@@ -10,7 +10,7 @@ Install with
 
 appdrag v0.0.1
 
-Usage  : appdrag command <args>
+Usage  : `appdrag command <args>`
    
 Available commands :
 
