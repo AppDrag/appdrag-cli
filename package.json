@@ -1,5 +1,5 @@
 {
-  "name": "appdrag-cli",
+  "name": "appdrag",
   "bin": "./src/index.js",
   "version": "1.0.0",
   "description": "",
@@ -22,5 +22,7 @@
     "unzipper": "^0.10.9",
     "zlib": "^1.0.5"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "minimist": ">=0.2.1"
+  }
 }

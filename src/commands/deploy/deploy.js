@@ -25,8 +25,8 @@ const deployFilesystem = async (args) => {
   if (files.status == 'KO') {
     let token_ref = config.get('refreshToken');
     await refreshToken(token_ref);
-    response = await getFunctionsList(appId, token);
-    if (response.status == 'KO') {
+    files = await getDirectoryListing(token, appId, '');
+    if (files.status == 'KO') {
       console.log(chalk.red('Please log-in again'));
       return;
     }

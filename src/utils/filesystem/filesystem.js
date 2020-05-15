@@ -101,6 +101,18 @@ const unzipAndDelete = async (appId, token, destPath, filePath) => {
     })
   }
   await fetch('https://api.appdrag.com/api.aspx?', opts_unzip);
+  let data = new URLSearchParams({
+    command: 'DeleteFile',
+    token: token,
+    appID: appId,
+    filekey: filePath
+  });
+  let opts_delete = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+    body: data
+  };
+  await fetch('https://api.appdrag.com/api.aspx?', opts_delete);
 }
 
 const getDirectoryListing = async (token, appId, pathToPull) => {
