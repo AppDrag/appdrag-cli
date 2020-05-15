@@ -23,6 +23,6 @@
     "zlib": "^1.0.5"
   },
   "devDependencies": {
-    "minimist": ">=0.2.1"
+    "minimist": ">=1.2.3"
   }
 }
