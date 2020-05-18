@@ -1,5 +1,12 @@
 # appdrag-cli
-A CLI tool for appdrag.com, deploy your full-stack apps to the cloud
+A CLI tool for appdrag.com, deploy your full-stack apps to the cloud.
+Work with your local tools (VS Code, Atom, ...) and build process, then push your compiled code to your app in appdrag
+
+This tool is recommended for:
+- Develop locally with your usual tools (VS Code, Atom, ...) and build process (Webpack, ...)
+- Setup a CI/CD pipeline 
+- Setup an external backup of your app
+- Export/Import full-stack projects
 
 ## Installation
 
