@@ -40,12 +40,12 @@ async function main() {
   if (funcs.hasOwnProperty(args[0])){
     if (funcs[args[0]].hasOwnProperty(args[1])) {
       funcs[args[0]][args[1]](args);
-    } else if (funcs[args[0]].length === 0) {
+    } else if (funcs[args[0]].length !== undefined) {
       funcs[args[0]](args);
     } else {
-        console.log(chalk.red(
-          'Invalid command, please refer to the \'help\' command.\n'
-        ));
+      console.log(chalk.red(
+        'Invalid command, please refer to the \'help\' command.\n'
+      ));
     }
   }
 
