@@ -1,14 +1,14 @@
-# appdrag
+# appdrag-cli
 A CLI tool for appdrag.com, deploy your full-stack apps to the cloud
 
 ## Installation
 
 Install with 
-`npm install -g https://github.com/AppDrag/appdrag-cli`
+`npm install -g appdrag`
 
 ## Commands
 
-appdrag v0.0.1
+appdrag-cli v1.0.2
 
 Usage  : `appdrag command <args>`
    
@@ -17,23 +17,23 @@ Available commands :
 
 ### Setup
 
-   `login` 					                     Login to our service
+   `appdrag login` 					                     Login to our service
    
-   `init 	    <app-id>` 			            Link folder with your app-id
+   `appdrag init 	    <app-id>` 			            Link folder with your app-id
    
 
 ### Filesystem
   
-   `fs pull  	<source-folder>` 		         Pull folder from SERVER to LOCAL
+   `appdrag fs pull  	<source-folder>` 		         Pull folder from SERVER to LOCAL
    
-   `fs push  	<folder-to-push> <opt: dest>`	Push folder from LOCAL to SERVER
+   `appdrag fs push  	<folder-to-push> <opt: dest>`	Push folder from LOCAL to SERVER
    
 
 ### Database - CloudBackend
 
-   `db pull` 					                     Retrieves .sql file of your database from SERVER to LOCAL
+   `appdrag db pull` 					                     Retrieves .sql file of your database from SERVER to LOCAL
    
-   `db push  	<sql-file>` 			            Restore the database on SERVER from the LOCAL .sql backup provided
+   `appdrag db push  	<sql-file>` 			            Restore the database on SERVER from the LOCAL .sql backup provided
    
 
 ### Api - CloudBackend
