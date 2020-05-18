@@ -62,7 +62,7 @@ const help = () => {
       'AppDrag'
     )
   );
-  console.log(chalk.underline('appdrag-cli v1.00'));
+  console.log(chalk.underline('appdrag-cli v1.01'));
   console.log(chalk.bold('Usage'), ': appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'));
   console.log(chalk.bold('Available commands:'));
   console.log(chalk.blue('\n-- Setup'));
