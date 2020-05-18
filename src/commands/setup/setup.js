@@ -1,4 +1,5 @@
 const CryptoJS = require('crypto-js');
+const fs = require('fs');
 const chalk = require('chalk');
 const clear = require('clear');
 const { loginPrompt, requestLogin, codePrompt, storeUserInfo } = require('../../utils/setup/setup');
