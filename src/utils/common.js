@@ -5,6 +5,7 @@
 const fs = require('fs');
 const chalk = require('chalk');
 const Configstore = require('configstore');
+const fetch = require('node-fetch');
 
 const APP_ID_PATH = '.appdrag';
 const currFolder = process.cwd();
