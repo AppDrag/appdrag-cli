@@ -5,7 +5,7 @@ const chalk = require('chalk');
 
 const pushApi = async (args) => {
   if (args.length < 2) {
-    console.log(chalk.red('Please refer to the help command'));
+    console.log(chalk.red('Insufficient or invalid arguments. Please refer to "appdrag help" for more information'));
     return;
   }
   let appId = setupCheck();
