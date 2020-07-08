@@ -58,7 +58,6 @@ const requestLogin = async (data) => {
   }
   let response = await fetch('https://api.appdrag.com/api.aspx', opts);
   response = await response.json();
-  console.log(response);
   if (response.status === 'OK' || response.Table) {
     return response;
   } else {
