@@ -23,11 +23,11 @@ Usage  : `appdrag command <args> [-options]`
 
 ### Options list :
  
-   **-a** [APPID]
+   **-a [APPID]**
    
    -a simply input your appId directly in the command line instead of using `init`.
 
-   **-t** [TOKEN]
+   **-t [TOKEN]**
    
    -t simply input your token directly in the command line instead of using `login`.
 
