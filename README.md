@@ -17,8 +17,15 @@ Install with
 
 appdrag-cli v1.0.3
 
-Usage  : `appdrag command <args>`
-   
+Usage  : `appdrag command <args> [-options]`
+         or
+         `appdrag [-options] command <args>`
+
+### Options list :
+ 
+   -a, simply input your appId directly in the command line instead of using `init`.
+   -t, simply input your token directly in the command line instead of using `login`.
+
 Available commands :
 
 
