@@ -25,11 +25,20 @@ Usage  : `appdrag command <args> [-options]`
  
    **-a [APPID]**
    
-   **-a** simply input your appId directly in the command line instead of using `init`.
+   Input your appId directly in the command line instead of using `init`.
 
    **-t [TOKEN]**
    
-   **-t** simply input your token directly in the command line instead of using `login`.
+   Input your token directly in the command line instead of using `login`.
+
+   **-i [SUFFIX]**
+   
+   (fs pull specific) Only pulls files with the specified suffix.
+
+   **-e [SUFFIX]**
+   
+   (fs pull specific) Exclude files with the specified suffix from bein pulled.')
+
 
 Available commands :
 

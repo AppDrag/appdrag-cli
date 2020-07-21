@@ -46,14 +46,12 @@ const pullFilesystem = async (args, argOpts) => {
     return;
   }
   let token = tokenObj.token;
-  console.log(appId, tokenObj.token, '::', tokenObj.method)
   let pathToPull = args[2] || '';
   let files = await getDirectoryListing(token, appId, pathToPull);
   if (files.status == 'KO') {
     if (tokenObj.method == 'login') {
       let token_ref = config.get('refreshToken');
       await refreshToken(token_ref);
-      console.log('test');
       files = await getDirectoryListing(token, appId, pathToPull);
       if (files.status == 'KO') {
         console.log(chalk.red('Please log-in again'));
@@ -62,6 +60,27 @@ const pullFilesystem = async (args, argOpts) => {
     } else {
       console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
       return;
+    }
+  }
+  console.log(argOpts);
+  if (argOpts) {
+    if (argOpts.e) {
+      let pattern = `${argOpts.e}$`;
+      let regexp = new RegExp(pattern, 'g');
+      files = files.filter(file => {
+        if (!file.path.match(regexp)) {
+          return file;
+        }
+      });
+    }
+    if (argOpts.i) {
+      let pattern = `${argOpts.i}$`;
+      let regexp = new RegExp(pattern, 'g');
+      files = files.filter(file => {
+        if (file.path.match(regexp)) {
+          return file;
+        }
+      });
     }
   }
   if (files.length === 0) {

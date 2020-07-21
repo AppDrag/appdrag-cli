@@ -18,7 +18,6 @@ class Token {
 
   setToken (_token) {
     this.token = _token;
-    console.log('setToken');
   }
 
   setMethod (_method) {
@@ -89,7 +88,12 @@ const help = () => {
     )
   );
   console.log(chalk.underline('appdrag-cli v1.01'));
-  console.log(chalk.bold('Usage'), ': appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'));
+  console.log(chalk.bold('Usage'), ': appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'), chalk.cyan('-options'));
+  console.log(chalk.bold('Options:'));
+  console.log(chalk.blue('-a [appId]: Input your appId directly in the command line instead of using `init`.'));
+  console.log(chalk.blue('-t [token]: Input your appId directly in the command line instead of using `init`.'));
+  console.log(chalk.blue('-i [suffix]: (fs pull specific) Only pulls files with the specified suffix.'));
+  console.log(chalk.blue('-e [suffix]: (fs pull specific) Exclude files with the specified suffix from bein pulled.'));
   console.log(chalk.bold('Available commands:'));
   console.log(chalk.blue('\n-- Setup'));
   console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
