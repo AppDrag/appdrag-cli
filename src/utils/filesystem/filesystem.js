@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const archiver = require('archiver');
 const chalk = require('chalk')
-const { config, refreshToken } = require('../common')
+const { config, refreshToken, tokenObj } = require('../common')
 
 const createZip = async (sourceFolder, zipPath, currFolder) => {
   let isErr = false;
@@ -44,10 +44,18 @@ const pushFiles = async (appId, filePath, token, destPath) => {
   if (url.status === 'KO') {
     url = await getSignedURL(appId, filePath, token);
     if (url.status == 'KO') {
-      let token_ref = config.get('refreshToken');
-      await refreshToken(token_ref);
-      console.log(chalk.blue('Please login again.'));
-      return;
+      if ( tokenObj.method == 'login') {
+        let token_ref = config.get('refreshToken');
+        await refreshToken(token_ref);
+        url = await getSignedURL(appId, filePath, token);
+        if (url.status == 'KO') {
+          console.log(chalk.blue('Please login again.'));
+        }
+        return;
+      } else {
+        console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
+        return;
+      }
     }
   }
   url = url.signedURL;

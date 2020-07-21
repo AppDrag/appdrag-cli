@@ -1,20 +1,20 @@
 const { getDirectoryListing } = require('../../utils/filesystem/filesystem');
 const { getFunctionsList } = require('../../utils/api/api');
 const { parseDirectory, parseHtmlFiles, downloadResources, deployCloudBackend, downloadDb } = require('../../utils/deploy/deploy');
-const { setupCheck, currFolder, config, refreshToken } = require('../../utils/common');
+const { setupCheck, currFolder, config, refreshToken, tokenObj } = require('../../utils/common');
 const fs = require('fs');
 const chalk = require('chalk');
 
-const deployFilesystem = async (args) => {
+const deployFilesystem = async (args, argOpts) => {
   if (args.length < 3) {
     console.log(chalk.red('Not enough arguments, please specify a file/folder'));
     return;
   }
-  let appId = setupCheck();
+  let appId = setupCheck(argOpts);
   if (!appId) {
     return;
   }
-  let token = config.get('token');
+  let token = tokenObj.token;
   if (args[2]) {
     if (!(fs.existsSync(args[2]))) {
       fs.mkdirSync(args[2]);
@@ -23,11 +23,16 @@ const deployFilesystem = async (args) => {
   }
   let files = await getDirectoryListing(token, appId, '');
   if (files.status == 'KO') {
-    let token_ref = config.get('refreshToken');
-    await refreshToken(token_ref);
-    files = await getDirectoryListing(token, appId, '');
-    if (files.status == 'KO') {
-      console.log(chalk.red('Please log-in again'));
+    if (tokenObj.method == 'login') {
+      let token_ref = config.get('refreshToken');
+      await refreshToken(token_ref);
+      files = await getDirectoryListing(token, appId, '');
+      if (files.status == 'KO') {
+        console.log(chalk.red('Please log-in again'));
+        return;
+      }
+    } else {
+      console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
       return;
     }
   }
@@ -39,23 +44,28 @@ const deployFilesystem = async (args) => {
   return true;
 }
 
-const deployApi = async (args) => {
+const deployApi = async (args, argOpts) => {
   if (args.length < 3) {
     console.log(chalk.red('Please refer to the help command'));
     return;
   }
-  let appId = setupCheck();
+  let appId = setupCheck(argOpts);
   if (!appId) {
     return;
   }
-  let token = config.get('token');
+  let token = tokenObj.token;
   let response = await getFunctionsList(appId, token);
   if (response.status == 'KO') {
-    let token_ref = config.get('refreshToken');
-    await refreshToken(token_ref);
-    response = await getFunctionsList(appId, token);
-    if (response.status == 'KO') {
-      console.log(chalk.red('Please log-in again'));
+    if (tokenObj.method == 'login') {
+      let token_ref = config.get('refreshToken');
+      await refreshToken(token_ref);
+      response = await getFunctionsList(appId, token);
+      if (response.status == 'KO') {
+        console.log(chalk.red('Please log-in again'));
+        return;
+      }
+    } else {
+      console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
       return;
     }
   }
@@ -69,16 +79,16 @@ const deployApi = async (args) => {
   return true;
 }
 
-const deployDb = async (args) => {
+const deployDb = async (args, argOpts) => {
   if (args.length < 3) {
     console.log(chalk.red('Please refer to the help command'));
     return;
   }
-  let appId = setupCheck();
+  let appId = setupCheck(argOpts);
   if (!appId) {
     return;
   }
-  let token = config.get('token');
+  let token = tokenObj.token;
   let folder = '.';
   if (args[2]) {
     folder = args[2];

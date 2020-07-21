@@ -1,5 +1,5 @@
 const { createZip, getSignedURL, pushToAwsS3 } = require('../../utils/filesystem/filesystem');
-const { refreshToken, config } = require('../../utils/common');
+const { refreshToken, config, tokenObj } = require('../../utils/common');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const unzipper = require('unzipper');
@@ -160,11 +160,16 @@ const pushFunctions = async (appId, token, currFolder, basePath, folders) => {
     let fileSizeInBytes = fs.statSync(zipPath).size;
     let url = await getSignedURL(appId, `CloudBackend/api/${zipPath}`, token);
     if (url.status == 'KO') {
-      let token_ref = config.get('refreshToken');
-      await refreshToken(token_ref);
-      url = await getSignedURL(appId, `CloudBackend/api/${zipPath}`, token);
-      if (url.status == 'KO') {
-        console.log(chalk.red('Please log-in again'));
+      if (tokenObj.method == 'login') {
+        let token_ref = config.get('refreshToken');
+        await refreshToken(token_ref);
+        url = await getSignedURL(appId, `CloudBackend/api/${zipPath}`, token);
+        if (url.status == 'KO') {
+          console.log(chalk.red('Please log-in again'));
+          return;
+        }
+      } else {
+        console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
         return;
       }
     }

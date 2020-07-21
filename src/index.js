@@ -6,7 +6,8 @@ const { pushFilesystem, pullFilesystem } = require('./commands/filesystem/filesy
 const { pushApi, pullApi } = require('./commands/api/api');
 const { pullDatabase, pushDatabase } = require('./commands/database/database');
 const { deployFilesystem, deployApi, deployDb } = require('./commands/deploy/deploy');
-const { checkAppId, help } = require('./utils/common');
+const { setupCheck, help } = require('./utils/common');
+var argv = require('minimist')(process.argv.slice(2));
 
 async function main() {
   let funcs = {
@@ -30,18 +31,20 @@ async function main() {
       'api': deployApi,
       'db': deployDb,
     }
-  }
+  };
 
-  var args = process.argv.slice(2);  
+  var args = argv._;
   if (args.length === 0) {
     help();
     return;
   }
+  delete argv._;
+  const argOpts = argv;
   if (funcs.hasOwnProperty(args[0])){
     if (funcs[args[0]].hasOwnProperty(args[1])) {
-      funcs[args[0]][args[1]](args);
+      funcs[args[0]][args[1]](args, argOpts);
     } else if (funcs[args[0]].length !== undefined) {
-      funcs[args[0]](args);
+      funcs[args[0]](args, argOpts);
     } else {
       console.log(chalk.red(
         'Invalid command, please refer to the \'help\' command.\n'

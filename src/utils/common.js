@@ -9,23 +9,46 @@ const fetch = require('node-fetch');
 
 const APP_ID_PATH = '.appdrag';
 const currFolder = process.cwd();
+class Token {
 
+  constructor(_token, _method) {
+    this.token = _token;
+    this.method = _method;
+  }
+
+  setToken (_token) {
+    this.token = _token;
+    console.log('setToken');
+  }
+
+  setMethod (_method) {
+    this.method = _method;
+  }
+}
+var tokenObj = new Token('DEFAULT','DEFAULT');
 /**
  * Config file to check if user is logged on this machine
  */
 const packageJson = require('../../package.json');
 const config = new Configstore(packageJson.name);
 
-
-const setupCheck = () => {
-  if (!checkLogin()) {
+const setupCheck = (argOpts) => {
+  if (!checkLogin() && !argOpts.t) {
     console.log(chalk.red('Please login first'));
     return false;
   }
+  if (argOpts.t) {
+    tokenObj.setToken(argOpts.t);
+    tokenObj.setMethod('option');
+  }
   let appId = checkAppId();
   if (!appId) {
-    console.log(chalk.red('Run init first'));
-    return false;
+    if (argOpts.a) {
+      return argOpts.a;
+    } else {
+      console.log(chalk.red('Run init first'));
+      return false;
+    }
   }
   return appId;
 }
@@ -48,6 +71,8 @@ const checkAppId = () => {
  */
 const checkLogin = () => {
   if (config.get('token')) {
+     tokenObj.setToken(config.get('token'));
+     tokenObj.setMethod('login');
     return true;
   } else {
     return false;
@@ -104,5 +129,6 @@ module.exports = {
   checkAppId,
   checkLogin,
   currFolder,
-  refreshToken
+  refreshToken,
+  tokenObj
 }

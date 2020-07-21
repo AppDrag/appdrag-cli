@@ -2,8 +2,6 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const chalk = require('chalk');
 const FormData = require('form-data');
-const { refreshToken } = require('../../utils/common');
-
 
 const pushDbToCloudBackend = async (appId, token, filePath) => {
   let file = fs.readFileSync(filePath);

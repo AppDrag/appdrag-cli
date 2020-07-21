@@ -1,4 +1,4 @@
-const { setupCheck, currFolder, config, refreshToken } = require('../../utils/common');
+const { setupCheck, tokenObj } = require('../../utils/common');
 const { downloadDb, pushDbToCloudBackend } = require('../../utils/database/database');
 const fs = require('fs');
 const chalk = require('chalk');
@@ -12,7 +12,7 @@ const pushDatabase = async (args) => {
   if (!appId) {
     return;
   }
-  let token = config.get('token');
+  let token = tokenObj.token;
   let filePath = args[2];
   if (!fs.existsSync(filePath)) {
     console.log(chalk.red(`File doesn't exist`));
@@ -31,7 +31,7 @@ const pullDatabase = async (args) => {
   if (!appId) {
     return;
   }
-  let token = config.get('token');
+  let token = tokenObj.token;
   await downloadDb(appId, token);
   return true;
 }
