@@ -85,7 +85,7 @@ Available commands :
 
    `help` 					                    Displays this help text
    
-## Usage exemples
+## Usage examples
 
 After logging-in through our ``login`` command or using the ``-t`` flag, and setting up your appId with -a or with ``init``. You will be able to use the CLI.
 Here are some examples to help you through the process.
