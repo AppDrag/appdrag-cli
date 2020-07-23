@@ -1,6 +1,6 @@
 
 ![AppDragLogo](https://appdrag.com/img/logo-blanc.svg)
-# appdrag-cli
+# appdrag CLI
 A CLI tool for [Appdrag](https://appdrag.com/), deploy your full-stack apps to the cloud.
 Work with your local tools (VS Code, Atom, ...) and build process, then push your compiled code to your app in appdrag
 
