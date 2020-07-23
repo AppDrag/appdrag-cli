@@ -162,10 +162,14 @@ const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
         }
       } else {
         let file = fs.createWriteStream(path, {'encoding': 'utf-8'});
-        let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${path}`, {
+        let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
           method: 'GET'
         });
-        response.body.pipe(file);
+        try {
+          response.body.pipe(file);
+        } catch (err) {
+          console.log(chalk.red(`Could not write ${file} : ${err}`));
+        }
         file.on('finish', () => {
           console.log(chalk.green(`done writing : ${path}`));
           file.close();
