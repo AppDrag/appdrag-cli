@@ -62,7 +62,6 @@ const pullFilesystem = async (args, argOpts) => {
       return;
     }
   }
-  console.log(argOpts);
   if (argOpts) {
     if (argOpts.e) {
       let pattern = `${argOpts.e}$`;

@@ -165,11 +165,10 @@ const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
         let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
           method: 'GET'
         });
-        try {
-          response.body.pipe(file);
-        } catch (err) {
-          console.log(chalk.red(`Could not write ${file} : ${err}`));
-        }
+        response.body.pipe(file);
+        file.on('error', () => {
+          console.log(chalk.red(`error writing : ${path}`));
+        });
         file.on('finish', () => {
           console.log(chalk.green(`done writing : ${path}`));
           file.close();
