@@ -1,5 +1,10 @@
 const CryptoJS = require('crypto-js');
 const fs = require('fs');
+
+const Spinner = require('cli-spinner').Spinner;
+var spinner = new Spinner('Logging in....%s');
+spinner.setSpinnerString(18);
+
 const chalk = require('chalk');
 const clear = require('clear');
 const { loginPrompt, requestLogin, codePrompt, storeUserInfo } = require('../../utils/setup/setup');
@@ -14,7 +19,7 @@ const init = async (args) => {
     if (err) throw err;
     console.log(chalk.green(`Config file successfully written, you won't need to specify your appID when pushing from this directory.`));
   });
-}
+};
 
 const login = async () => {
   clear();
@@ -27,10 +32,13 @@ const login = async () => {
     'email': inputs.email,
     'password': hashPassword
   });
+  spinner.start();
   if (!await requestLogin(data)) {
-    console.log(chalk.redBright('Incorrect email and/or password'));
+    console.log(chalk.redBright('\nIncorrect email and/or password'));
+    spinner.stop();
     return;
   }
+  spinner.stop();
   console.log(chalk.greenBright('A verification code has been sent to your email'));
   inputs = await codePrompt();
   data.append('verificationCode', inputs.code);
@@ -41,6 +49,6 @@ const login = async () => {
   }
   storeUserInfo(userData.Table[0]);
   console.log(chalk.green('You are now logged in'));
-}
+};
 
 module.exports = { login, init }

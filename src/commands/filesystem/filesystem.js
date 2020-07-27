@@ -1,6 +1,7 @@
 const chalk = require('chalk')
 const { setupCheck, currFolder, config, refreshToken, tokenObj } = require('../../utils/common');
 const { createZip, pushFiles, getDirectoryListing, parseDirectory, pullSingleFile } =  require('../../utils/filesystem/filesystem')
+const Spinner = require('cli-spinner').Spinner;
 
 const pushFilesystem = async (args, argOpts) => {
   if (args.length < 3) {
@@ -31,8 +32,17 @@ const pushFilesystem = async (args, argOpts) => {
     }
     destPath = args[3] + '/';
   }
+  var spinner = new Spinner(`Pushing content of ${args[2]} to ${appId}/${destPath}... %s`);
+  spinner.setSpinnerString(18);
   console.log(chalk.green(`Zip successfully written !`));
+  spinner.start();
   let push = await pushFiles(appId, zipPath, token, destPath);
+  spinner.stop();
+  if (push === true) {
+    console.log(chalk.green('\nPush success !'));
+  } else {
+    console.log(chalk.red('\nPush failure !'));
+  }
   return true;
 }
 

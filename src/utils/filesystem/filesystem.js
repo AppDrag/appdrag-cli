@@ -49,18 +49,19 @@ const pushFiles = async (appId, filePath, token, destPath) => {
         await refreshToken(token_ref);
         url = await getSignedURL(appId, filePath, token);
         if (url.status == 'KO') {
-          console.log(chalk.blue('Please login again.'));
+          console.log(chalk.blue('\nPlease login again.'));
         }
-        return;
+        return false;
       } else {
-        console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
-        return;
+        console.log(chalk.red('\nThe token used through the -t option may be incorrect/invalid.'));
+        return false;
       }
     }
   }
   url = url.signedURL;
   await pushToAwsS3(fileContent, fileSizeInBytes, url);
   await unzipAndDelete(appId, token, destPath, filePath);
+  return true;
 }
 
 const getSignedURL = async (appId, filePath, token) => {
@@ -165,20 +166,20 @@ const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
         let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
           method: 'GET'
         });
-        response.body.pipe(file);
-        file.on('error', () => {
-          console.log(chalk.red(`error writing : ${path}`));
-        });
+       response.body.pipe(file);
+       file.on('error', (err) => {
+        console.log(chalk.blue(`error, ${err}`));
+       })
         file.on('finish', () => {
           console.log(chalk.green(`done writing : ${path}`));
           file.close();
           if (path === lastfile) {
             return true;
           }
-        })
+        });
       }
     }
-}
+};
 
 const isFolder = async (token, appId, folder, path) => {
   if (!fs.existsSync(path)) {

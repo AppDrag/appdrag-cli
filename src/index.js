@@ -55,3 +55,7 @@ async function main() {
 }
 
 main();
+
+process.on('uncaughtException', async function (err) {
+  console.log(chalk.red(`error writing : ${err}`));
+});
