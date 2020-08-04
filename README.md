@@ -73,13 +73,9 @@ Available commands :
    `api push  	<opt: function_id>`		        Push all (or one) function(s) from LOCAL to your CloudBackend
    
    
-### Deployment
+### Export
 
-   `deploy fs  	<path>`		                    Deploys all your non-CloudBackend related files to the specified folder
-   
-   `deploy api  <path>`           		        Deploys all the functions from your CloudBackend to the specified folder
-
-  `deploy db  <path>`           		        Deploys the database file from your CloudBackend to the specified folder
+   `export  	<path>`		                    Exports your project to the specified folder
 
 ### Help
 
