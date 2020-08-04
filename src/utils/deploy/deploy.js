@@ -195,23 +195,44 @@ const downloadAndWriteFunction = async (token, appId, path, functionObj, apiKey)
   file.on('close', () => {
     fs.createReadStream(filePath)
     .pipe(unzipper.Extract({path: path}))
-    .on('finish', () => {
+    .on('close', () => {
       console.log(chalk.green(`Finished writing "${functionObj.name}"`));
-      if (fs.existsSync(`${path}/main.js`)) {
-        fs.renameSync(`${path}/main.js`, `${path}/${functionObj.name}.js`);
-      }
-      if (fs.existsSync(`${path}/main.py`)) {
-        fs.renameSync(`${path}/main.py`, `${path}/${functionObj.name}.py`);
-      }
-      if (fs.existsSync(`${path}/backup.csv`)) {
-        fs.unlinkSync(`${path}/backup.csv`);
-      }
-      if (fs.existsSync(`${path}/backup.json`)) {
-        fs.unlinkSync(`${path}/backup.json`);
-      }
-      if (fs.existsSync(`${path}/main.zip`)) {
-        fs.unlinkSync(`${path}/main.zip`);
-      }
+      fs.access(`${path}/main.js`, (err) => {
+        if (err) {
+          return;
+        } else {
+          fs.renameSync(`${path}/main.js`, `${path}/${functionObj.name}.js`);
+        }
+      });
+      fs.access(`${path}/main.py`, (err) => {
+        if (err) {
+          return;
+        } else {
+          fs.renameSync(`${path}/main.py`, `${path}/${functionObj.name}.py`);
+        }
+      });
+      fs.access(`${path}/backup.csv`, (err) => {
+        if (err) {
+          return;
+        } else {
+          fs.unlinkSync(`${path}/backup.csv`);
+        }
+      });
+      fs.access(`${path}/backup.json`, (err) => {
+        if (err) {
+          return;
+        } else {
+          fs.unlinkSync(`${path}/backup.json`);
+        }
+      });
+      fs.access(`${path}/main.zip`, (err) => {
+        if (err) {
+          return;
+        } else {
+          fs.unlinkSync(`${path}/main.zip`);
+        }
+      });
+    }).on('finish', () => {      
       fs.unlinkSync(filePath);
     });
   });
@@ -402,7 +423,7 @@ const writeInsertVSQLFile = (functionObj, filePath) => {
   }
   finalQuery += " INSERT INTO " + functionObj.tableName;
   finalQuery += " (" + cols + ") values (" + vals + ") ";
-  fs.writeFileSync(`${filePath}/${functionObj.name}.sql`, finalQuery);
+  fs.writeFileSync(`./${filePath}/${functionObj.name}.sql`, finalQuery);
 };
 
 const writeDeleteVSQLFile = (functionObj, filePath) => {
@@ -506,7 +527,7 @@ const downloadDb = async (appId, token, folder) => {
   });
 };
 
-const appConfigJson = async (appId, funcJson, baseFolder) => {
+const appConfigJson = (appId, funcJson, baseFolder) => {
   let object = {
     "env": "PROD",
     "version": "1.0.0",
@@ -558,7 +579,9 @@ const appConfigJson = async (appId, funcJson, baseFolder) => {
       }
     });
   }
-  fs.writeFileSync(`./${baseFolder}/appconfig.json`, JSON.stringify(object));
+  let toWrite = JSON.stringify(object);
+  fs.writeFileSync(`./${baseFolder}/appconfig.json`, toWrite);
+  return;
 };
 
 module.exports = { flattenFunctionList, appConfigJson, parseDirectory, isFolder, parseHtmlFiles, replaceLinks, downloadResources, deployCloudBackend, downloadDb };
