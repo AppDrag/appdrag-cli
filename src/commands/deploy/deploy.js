@@ -7,7 +7,8 @@ const chalk = require('chalk');
 const util = require('util');
 
 const deployFilesystem = async (args, argOpts) => {
-  if (args.length < 2) {
+  console.log(args);
+  if (args.length <= 0) {
     console.log(chalk.red('Please refer to the help command'));
     return;
   }
@@ -16,11 +17,11 @@ const deployFilesystem = async (args, argOpts) => {
     return;
   }
   let token = tokenObj.token;
-  if (args[2]) {
-    if (!(fs.existsSync(args[2]))) {
-      fs.mkdirSync(args[2]);
+  if (args[0]) {
+    if (!(fs.existsSync(args[0]))) {
+      fs.mkdirSync(args[0]);
     }
-    process.chdir(args[2]);
+    process.chdir(args[0]);
   }
   if (!(fs.existsSync('public/'))) {
     fs.mkdirSync('public/');
@@ -50,7 +51,7 @@ const deployFilesystem = async (args, argOpts) => {
 }
 
 const deployApi = async (args, argOpts) => {
-  if (args.length < 3) {
+  if (args.length <= 0) {
     console.log(chalk.red('Please refer to the help command'));
     return;
   }
@@ -76,10 +77,10 @@ const deployApi = async (args, argOpts) => {
   }
   let functionList = response.Table;
   let baseFolder = '';
-  if (args[2]) {
-    baseFolder = args[2];
+  if (args[0]) {
+    baseFolder = args[0];
   }
-  writeScriptFile(functionList);
+  writeScriptFile(functionList, baseFolder);
   let flattenedList = flattenFunctionList(functionList);
   await deployCloudBackend(token, appId, flattenedList, baseFolder);
   appConfigJson(appId, flattenedList, baseFolder);
@@ -87,7 +88,7 @@ const deployApi = async (args, argOpts) => {
 };
 
 const deployDb = async (args, argOpts) => {
-  if (args.length < 3) {
+  if (args.length <= 0) {
     console.log(chalk.red('Please refer to the help command'));
     return;
   }
@@ -97,8 +98,8 @@ const deployDb = async (args, argOpts) => {
   }
   let token = tokenObj.token;
   let folder = '.';
-  if (args[2]) {
-    folder = args[2];
+  if (args[0]) {
+    folder = args[0];
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder);
     }
@@ -107,4 +108,15 @@ const deployDb = async (args, argOpts) => {
   return true;
 };
 
-module.exports = { deployApi, deployFilesystem, deployDb };
+const exportProject = async (args, argOpts) => {
+  await deployFilesystem(args, argOpts);
+  if (args[0]) {
+    process.chdir('../..');
+  } else {
+    process.chdir('..');
+  }
+  await deployApi(args, argOpts);
+  await deployDb(args, argOpts);
+  return;
+}
+module.exports = { deployApi, deployFilesystem, deployDb, exportProject };

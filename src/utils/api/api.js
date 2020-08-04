@@ -81,7 +81,7 @@ const getFunctionURL =  async (data) => {
   return res.url;
 }
 
-const writeScriptFile = (functionList) => {
+const writeScriptFile = (functionList, baseFolder = '') => {
   let modules = [];
     functionList.forEach(func => {
       if (func.libs) {
@@ -93,7 +93,11 @@ const writeScriptFile = (functionList) => {
         });
       }
     });
-    fs.writeFileSync('./install.sh', 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
+    if (baseFolder === '') {
+      fs.writeFileSync(`./install.sh`, 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
+    } else {
+      fs.writeFileSync(`./${baseFolder}/install.sh`, 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
+    }
 }
 
 const apiJson = (api, appId) => {

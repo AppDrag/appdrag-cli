@@ -4,7 +4,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 
 const pushDatabase = async (args) => {
-  if (args.length < 3) {
+  if (args.length <= 0) {
     console.log(chalk.red('File argument needed, please refer to the help command'));
     return;
   }
@@ -13,7 +13,7 @@ const pushDatabase = async (args) => {
     return;
   }
   let token = tokenObj.token;
-  let filePath = args[2];
+  let filePath = args[0];
   if (!fs.existsSync(filePath)) {
     console.log(chalk.red(`File doesn't exist`));
     return;
@@ -23,10 +23,6 @@ const pushDatabase = async (args) => {
 }
 
 const pullDatabase = async (args) => {
-  if (args.length < 2) {
-    console.log(chalk.red('Please refer to the help command'));
-    return;
-  }
   let appId = setupCheck();
   if (!appId) {
     return;

@@ -4,7 +4,7 @@ const { createZip, pushFiles, getDirectoryListing, parseDirectory, pullSingleFil
 const Spinner = require('cli-spinner').Spinner;
 
 const pushFilesystem = async (args, argOpts) => {
-  if (args.length < 3) {
+  if (args.length <= 0) {
     console.log(chalk.red('Not enough arguments, please specify a file/folder'));
     return;
   }
@@ -12,27 +12,27 @@ const pushFilesystem = async (args, argOpts) => {
   if (!appId) {
     return;
   }
-  if (args[2][args[2].length -1] === '/') {
-    args[2] = args[2].slice(0, -1);
+  if (args[0][args[0].length -1] === '/') {
+    args[0] = args[0].slice(0, -1);
   }
   var destPath = '';
   let token = tokenObj.token;
   let date = new Date();
   let zipPath = `appdrag-cli-${date.getDate()}${date.getMonth()}${date.getFullYear()}${date.getHours()}${date.getMinutes()}${date.getSeconds()}.zip`;
-  let zipErr = await createZip(args[2], zipPath, currFolder);
+  let zipErr = await createZip(args[0], zipPath, currFolder);
   if (zipErr) {
     console.log(chalk.red('Error during archiving process, please specify a folder not a file.'));
     return;
   }
-  if (args.length === 3) {
+  if (args.length === 2) {
     destPath = '';
   } else {
-    if (args[3][args[3].length - 1] === '/') {
-      args[3] = args[3].slice(0, -1);
+    if (args[1][args[1].length - 1] === '/') {
+      args[1] = args[1].slice(0, -1);
     }
-    destPath = args[3] + '/';
+    destPath = args[1] + '/';
   }
-  var spinner = new Spinner(`Pushing content of ${args[2]} to ${appId}/${destPath}... %s`);
+  var spinner = new Spinner(`Pushing content of ${args[0]} to ${appId}/${destPath}... %s`);
   spinner.setSpinnerString(18);
   console.log(chalk.green(`Zip successfully written !`));
   spinner.start();
@@ -47,16 +47,12 @@ const pushFilesystem = async (args, argOpts) => {
 }
 
 const pullFilesystem = async (args, argOpts) => {
-  if (args.length < 2) {
-    console.log(chalk.red('Not enough arguments, please specify a file/folder'));
-    return;
-  }
   let appId = await setupCheck(argOpts);
   if (!appId) {
     return;
   }
   let token = tokenObj.token;
-  let pathToPull = args[2] || '';
+  let pathToPull = args[0] || '';
   let files = await getDirectoryListing(token, appId, pathToPull);
   if (files.status == 'KO') {
     if (tokenObj.method == 'login') {
