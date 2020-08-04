@@ -17,7 +17,7 @@ Install with
 
 ## Commands
 
-appdrag-cli v1.0.3
+appdrag-cli
 
 Usage  : `appdrag command <args> [-options]`
          or

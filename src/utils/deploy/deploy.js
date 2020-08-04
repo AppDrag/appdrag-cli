@@ -3,6 +3,8 @@ const fetch = require('node-fetch');
 const unzipper = require('unzipper');
 const fs = require('fs');
 const chalk = require('chalk');
+const { writeScriptFile } = require('../api/api');
+const { restoreDefaultPrompts } = require('inquirer');
 
 
 const parseDirectory = (token, appId, files, lastfile, currentPath) => {
@@ -32,7 +34,7 @@ const parseDirectory = (token, appId, files, lastfile, currentPath) => {
           else continue;
         }
         let file = fs.createWriteStream(path, {'encoding': 'utf-8'});
-        let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${path}`, {
+        let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
           method: 'GET'
         });
         response.body.pipe(file);
@@ -42,7 +44,7 @@ const parseDirectory = (token, appId, files, lastfile, currentPath) => {
           if (path === lastfile) {
             resolve();
           }
-        })
+        });
       }
     }
   });
@@ -118,20 +120,60 @@ const deployCloudBackend = async (token, appId, funcs, baseFolder) => {
   if (!fs.existsSync(`${baseFolder}/api`)) {
     fs.mkdirSync(`${baseFolder}/api`);
   }
-
-  for(let x = 0; x < funcs.length; x++) {
-    let newPath = `${baseFolder}/api/${funcs[x].name}`;
-    if (funcs[x].type !== 'FOLDER') {
-      if (!fs.existsSync(newPath)) {
-        fs.mkdirSync(newPath);
+  for (const funcFolder in funcs) {
+    let basePath = `${baseFolder}/api`;
+    funcs[funcFolder].functions.forEach(async (func) => {
+      let filePath = '';
+      if (!funcs[funcFolder].name) {
+         filePath += `${basePath}`;
+      } else {
+        filePath += `${basePath}/${funcs[funcFolder].name}`;
+        if (!fs.existsSync(filePath)) {
+          fs.mkdirSync(filePath);
+        }
       }
-      await downloadAndWriteFunction(token, appId, newPath, funcs[x], apiKey);
-    }
+      if (func.type === 'SELECT') {
+        writeSelectVSQLFile(func, filePath);
+      } else if (func.type === 'UPDATE') {
+        writeUpdateVSQLFile(func, filePath);
+      } else if (func.type === 'INSERT') {
+        writeInsertVSQLFile(func, filePath);
+      } else if (func.type === 'DELETE') {
+        writeDeleteVSQLFile(func, filePath);
+      }
+      await downloadAndWriteFunction(token, appId, filePath, func, apiKey);
+    });
   }
-}
+};
+
+const flattenFunctionList = (functions) => {
+  let finalObj = {
+    '/': {
+      functions: []
+    }
+  };
+  functions.forEach((func) => {
+    if (func.type === 'FOLDER') {
+      finalObj[func.id] = {
+        name: func.name,
+        functions: []
+      };
+    }
+  });
+
+  functions.forEach((func) => {
+    if (func.type !== 'FOLDER') {
+      if (func.parentID !== -1) {
+        finalObj[func.parentID].functions.push(func);
+      } else {
+        finalObj['/'].functions.push(func);
+      }
+    }
+  });
+  return finalObj;
+};
 
 const downloadAndWriteFunction = async (token, appId, path, functionObj, apiKey) => {
-  await writeEnvFile(path, functionObj, apiKey)
   let filePath = `${path}/${appId}_${functionObj.id}.zip`;
   let data = {
     command: 'CloudAPIExportFile',
@@ -153,42 +195,269 @@ const downloadAndWriteFunction = async (token, appId, path, functionObj, apiKey)
   file.on('close', () => {
     fs.createReadStream(filePath)
     .pipe(unzipper.Extract({path: path}))
-    .on('close', () => {
+    .on('finish', () => {
       console.log(chalk.green(`Finished writing "${functionObj.name}"`));
-      if (fs.existsSync(`${path}/main.zip`)) {
-        fs.unlinkSync(`${path}/main.zip`);
+      if (fs.existsSync(`${path}/main.js`)) {
+        fs.renameSync(`${path}/main.js`, `${path}/${functionObj.name}.js`);
+      }
+      if (fs.existsSync(`${path}/main.py`)) {
+        fs.renameSync(`${path}/main.py`, `${path}/${functionObj.name}.py`);
       }
       if (fs.existsSync(`${path}/backup.csv`)) {
         fs.unlinkSync(`${path}/backup.csv`);
       }
+      if (fs.existsSync(`${path}/backup.json`)) {
+        fs.unlinkSync(`${path}/backup.json`);
+      }
+      if (fs.existsSync(`${path}/main.zip`)) {
+        fs.unlinkSync(`${path}/main.zip`);
+      }
       fs.unlinkSync(filePath);
     });
   });
-}
+};
 
-const writeEnvFile = async (path, functionObj, apiKey) => {
-  let envFile = fs.createWriteStream(`${path}/.env`);
-  envFile.write('APIKEY='+apiKey);
-  if (functionObj.envVars) {
-    let envVars = JSON.parse(functionObj.envVars);
-    delete envVars.APPID;
-    delete envVars.APIKEY;
-    if (Object.keys(envVars).length > 0) {
-      Object.keys(envVars).forEach(val => {
-        envFile.write('\n'+val+'='+envVars[val]);
-      });    
+const writeSelectVSQLFile = (functionObj, filePath) => {
+  let finalQuery = "";
+  let columns = "";
+  let whereConditions = JSON.parse(functionObj.whereConditions);
+  let outputColumns = JSON.parse(functionObj.outputColumns);
+  if (outputColumns !== []) {
+    outputColumns.map((col) => {
+      columns += `${col},`;
+    });
+    columns = columns.slice(0, -1);
+
+    finalQuery += `SELECT ${columns} FROM ${functionObj.tableName}`;
+  }
+  let where = "";
+  if (whereConditions !== []) {
+    whereConditions.map((condition) => {
+      let value = "";
+      if (condition.type == "value" || condition.type == "formula") {
+        value = condition.value;
+      } else {
+        if (condition.value === null) {
+          return;
+        }
+        value = condition.value.replace("'", "''");
+      }
+      let quotedValue = value;
+      let matchValue = condition.signOperator + quotedValue;
+      if (condition.signOperator == "contains")
+      {
+          matchValue = "LIKE '%" + value + "%'";
+      }
+      else if (condition.signOperator == "not contains")
+      {
+          matchValue = "NOT LIKE '%" + value + "%'";
+      }
+      else if (condition.signOperator == "starts with")
+      {
+          matchValue = "LIKE '" + value + "%'";
+      }
+      else if (condition.signOperator == "in")
+      {
+          matchValue = "IN (" + value + ")";
+      }
+      else if (condition.signOperator == "ends with")
+      {
+          matchValue = "LIKE '%" + value + "'";
+      }
+      else if (condition.signOperator == "is")
+      {
+          matchValue = "IS " + value;
+      }
+      else if (condition.signOperator == "is not")
+      {
+          matchValue = "IS NOT " + value;
+      }
+      finalQuery += " " + condition.conditionOperator + " `" + condition.column + "` " + matchValue;
+    });
+  }
+  // ORDER BY ==============================
+  if (functionObj.orderByColumn != ""){
+    let orderBy = "";
+    let orderByDirections = functionObj.orderByDirection.split(',');
+    let idx = 0;
+    functionObj.orderByColumn.split(',').forEach((column) => {
+      if (orderBy!= "")
+      {
+        orderBy += ", ";
+      }
+      orderBy += "`" + column + "`";
+      if (idx < orderByDirections.Length)
+      {
+        orderBy += " " + orderByDirections[idx];
+      }
+      idx++;
+    });
+    if (orderBy != "") {
+      finalQuery += " ORDER BY " + orderBy;
     }
   }
-  if (functionObj.type === 'SQLSELECT') {
-    fs.writeFileSync(`${path}/main.json`, JSON.stringify(functionObj));
-    fs.writeFileSync(`${path}/main.sql`, functionObj.sourceCode);
-    return;
-  } else {
-    fs.writeFileSync(`${path}/backup.json`, JSON.stringify(functionObj));
-  } 
+  fs.writeFileSync(`${filePath}/${functionObj.name}.sql`, finalQuery);
 }
 
-const getFunctionURL =  async (data) => {
+const writeUpdateVSQLFile = (functionObj, filePath) => {
+  let finalQuery = `UPDATE ${functionObj.tableName} SET `;
+  let mappingColumns = JSON.parse(functionObj.mappingColumns);
+  let whereConditions = JSON.parse(functionObj.whereConditions);
+
+  let updateStr = "";
+  mappingColumns.forEach((condition) => {
+    let value = "";
+    if (condition.type == 'value' || condition.type=='formula') {
+      value = condition.value;
+    } else {
+      if (condition.value == null) {
+        return;
+      }
+    }
+    if (updateStr != ""){
+      updateStr += ",";
+    }
+    if (condition.type != "formula") {
+      value = "'" + value + "'";
+    }
+    updateStr += "`" +condition.column + "`=" + value + " ";
+  });
+  finalQuery += updateStr;
+  let where = "";
+  if (whereConditions !== []) {
+    whereConditions.map((condition) => {
+      let value = "";
+      if (condition.type == "value" || condition.type == "formula") {
+        value = condition.value;
+      } else {
+        if (condition.value === null) {
+          return;
+        }
+        value = condition.value.replace("'", "''");
+      }
+      let quotedValue = value;
+      let matchValue = condition.signOperator + quotedValue;
+      if (condition.signOperator == "contains")
+      {
+          matchValue = "LIKE '%" + value + "%'";
+      }
+      else if (condition.signOperator == "not contains")
+      {
+          matchValue = "NOT LIKE '%" + value + "%'";
+      }
+      else if (condition.signOperator == "starts with")
+      {
+          matchValue = "LIKE '" + value + "%'";
+      }
+      else if (condition.signOperator == "in")
+      {
+          matchValue = "IN (" + value + ")";
+      }
+      else if (condition.signOperator == "ends with")
+      {
+          matchValue = "LIKE '%" + value + "'";
+      }
+      else if (condition.signOperator == "is")
+      {
+          matchValue = "IS " + value;
+      }
+      else if (condition.signOperator == "is not")
+      {
+          matchValue = "IS NOT " + value;
+      }
+      finalQuery += " " + condition.conditionOperator + " `" + condition.column + "` " + matchValue;
+    });
+  }
+  fs.writeFileSync(`${filePath}/${functionObj.name}.sql`, finalQuery);
+};
+
+const writeInsertVSQLFile = (functionObj, filePath) => {
+  let finalQuery = "";
+  let cols = '';
+  let vals = '';
+  let mappingColumns = JSON.parse(functionObj.mappingColumns);
+  if (mappingColumns) {
+    mappingColumns.map((condition) => {
+      let value = '';
+      if (condition.type == 'value' || condition.type == 'formula') {
+        value = condition.value;
+      } else {
+        if (condition.value == null) {
+          return;
+        }
+        value = condition.value.replace("'", "''");
+      }
+      if (cols != '') {
+        cols += ',';
+      }
+      cols += "`" + condition.column + "`";
+      if (vals != ""){
+        vals += ",";
+      }
+      if (condition.type != "formula") {
+        value = "'" + value + "'";
+      }
+      vals += value;
+    });
+  }
+  finalQuery += " INSERT INTO " + functionObj.tableName;
+  finalQuery += " (" + cols + ") values (" + vals + ") ";
+  fs.writeFileSync(`${filePath}/${functionObj.name}.sql`, finalQuery);
+};
+
+const writeDeleteVSQLFile = (functionObj, filePath) => {
+  let finalQuery = `DELETE FROM ${functionObj.tableName} `
+  let whereConditions = JSON.parse(functionObj.whereConditions);
+
+  let where = "";
+  if (whereConditions !== []) {
+    whereConditions.map((condition) => {
+      let value = "";
+      if (condition.type == "value" || condition.type == "formula") {
+        value = condition.value;
+      } else {
+        if (condition.value === null) {
+          return;
+        }
+        value = condition.value.replace("'", "''");
+      }
+      let quotedValue = value;
+      let matchValue = condition.signOperator + quotedValue;
+      if (condition.signOperator == "contains")
+      {
+          matchValue = "LIKE '%" + value + "%'";
+      }
+      else if (condition.signOperator == "not contains")
+      {
+          matchValue = "NOT LIKE '%" + value + "%'";
+      }
+      else if (condition.signOperator == "starts with")
+      {
+          matchValue = "LIKE '" + value + "%'";
+      }
+      else if (condition.signOperator == "in")
+      {
+          matchValue = "IN (" + value + ")";
+      }
+      else if (condition.signOperator == "ends with")
+      {
+          matchValue = "LIKE '%" + value + "'";
+      }
+      else if (condition.signOperator == "is")
+      {
+          matchValue = "IS " + value;
+      }
+      else if (condition.signOperator == "is not")
+      {
+          matchValue = "IS NOT " + value;
+      }
+      finalQuery += " " + condition.conditionOperator + " `" + condition.column + "` " + matchValue;
+    });
+  }
+  fs.writeFileSync(`./${filePath}/${functionObj.name}.sql`, finalQuery);
+};
+
+const getFunctionURL = async (data) => {
   let opts = {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
@@ -197,7 +466,7 @@ const getFunctionURL =  async (data) => {
   let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
   res = await res.json();
   return res.url;
-}
+};
 
 const getApiKey = async (token, appId) => {
   let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', {
@@ -205,9 +474,9 @@ const getApiKey = async (token, appId) => {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
     body: new URLSearchParams({command:'CloudDBGetSecretKey', token: token, appID: appId})
   });
-  res =  await res.json()
+  res =  await res.json();
   return res.secret_key;
-}
+};
 
 const downloadDb = async (appId, token, folder) => {
   let data = {
@@ -235,6 +504,61 @@ const downloadDb = async (appId, token, folder) => {
   file.on('close', () => {
     console.log(chalk.green(`Done writing ${appId}_backup.sql !`));
   });
-}
+};
 
-module.exports = { parseDirectory, isFolder, parseHtmlFiles, replaceLinks, downloadResources, deployCloudBackend, downloadDb };
+const appConfigJson = async (appId, funcJson, baseFolder) => {
+  let object = {
+    "env": "PROD",
+    "version": "1.0.0",
+    "title": `${appId}`,
+    "description": `${appId} Pulled from appdrag.com`,
+    "domains": ["*"], 
+    "publicFolder": "./public",
+    "TypeAPI": "LOCAL",
+    "TypeFS": "LOCAL",
+    "redirect404toIndex": true,
+    "apiEndpoints": {}
+  };
+  for (const key in funcJson) {
+    funcJson[key]['functions'].forEach(func => {
+      let pathToFunction;
+      if (funcJson[key].name) {
+        pathToFunction = `/${funcJson[key].name}/${func.name}`;
+      } else {
+        pathToFunction = `/${func.name}`;
+      }
+      object.apiEndpoints[`${pathToFunction}`] = { 
+          vpath: `./api${pathToFunction}`,
+          realpath:  `./${baseFolder}/api${pathToFunction}`,
+          handler: `${func.name}.handler`,
+          type: `${func.type}`,
+          lastParams: JSON.parse(func.lastParams),
+          method: func.method,
+          output: func.output,
+          parametersList: JSON.parse(func.parametersList),
+          whereConditions: JSON.parse(func.whereConditions),
+          tableName: func.tableName,
+          orderByDirection: func.orderByDirection,
+          orderByColumn: func.orderByColumn,
+          outputColumns: JSON.parse(func.outputColumns),
+          mappingColumns: JSON.parse(func.mappingColumns),
+          sourceCode: func.sourceCode,
+      };
+      if (func.envVars) {
+        object.apiEndpoints[`${pathToFunction}`].envVars = JSON.parse(func.envVars);
+      }
+      if (func.type !== "SELECT" && func.type !== "UPDATE" && func.type !== "DELETE" && func.type !== "INSERT") {
+        delete object.apiEndpoints[`${pathToFunction}`].sourceCode;
+        delete object.apiEndpoints[`${pathToFunction}`].mappingColumns;
+        delete object.apiEndpoints[`${pathToFunction}`].outputColumns;
+        delete object.apiEndpoints[`${pathToFunction}`].orderByColumn;
+        delete object.apiEndpoints[`${pathToFunction}`].orderByDirection;
+        delete object.apiEndpoints[`${pathToFunction}`].tableName;
+        delete object.apiEndpoints[`${pathToFunction}`].whereConditions;
+      }
+    });
+  }
+  fs.writeFileSync(`./${baseFolder}/appconfig.json`, JSON.stringify(object));
+};
+
+module.exports = { flattenFunctionList, appConfigJson, parseDirectory, isFolder, parseHtmlFiles, replaceLinks, downloadResources, deployCloudBackend, downloadDb };

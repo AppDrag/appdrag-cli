@@ -1,13 +1,14 @@
 const { getDirectoryListing } = require('../../utils/filesystem/filesystem');
-const { getFunctionsList } = require('../../utils/api/api');
-const { parseDirectory, parseHtmlFiles, downloadResources, deployCloudBackend, downloadDb } = require('../../utils/deploy/deploy');
+const { getFunctionsList, apiJson, writeScriptFile } = require('../../utils/api/api');
+const { parseDirectory, parseHtmlFiles, downloadResources, deployCloudBackend, downloadDb, appConfigJson, flattenFunctionList } = require('../../utils/deploy/deploy');
 const { setupCheck, currFolder, config, refreshToken, tokenObj } = require('../../utils/common');
 const fs = require('fs');
 const chalk = require('chalk');
+const util = require('util');
 
 const deployFilesystem = async (args, argOpts) => {
-  if (args.length < 3) {
-    console.log(chalk.red('Not enough arguments, please specify a file/folder'));
+  if (args.length < 2) {
+    console.log(chalk.red('Please refer to the help command'));
     return;
   }
   let appId = setupCheck(argOpts);
@@ -21,6 +22,10 @@ const deployFilesystem = async (args, argOpts) => {
     }
     process.chdir(args[2]);
   }
+  if (!(fs.existsSync('public/'))) {
+    fs.mkdirSync('public/');
+  }
+  process.chdir('public');
   let files = await getDirectoryListing(token, appId, '');
   if (files.status == 'KO') {
     if (tokenObj.method == 'login') {
@@ -74,10 +79,12 @@ const deployApi = async (args, argOpts) => {
   if (args[2]) {
     baseFolder = args[2];
   }
-  await deployCloudBackend(token, appId, functionList, baseFolder);
-
+  writeScriptFile(functionList);
+  let flattenedList = flattenFunctionList(functionList);
+  appConfigJson(appId, flattenedList, baseFolder);
+  await deployCloudBackend(token, appId, flattenedList, baseFolder);
   return true;
-}
+};
 
 const deployDb = async (args, argOpts) => {
   if (args.length < 3) {
@@ -98,6 +105,6 @@ const deployDb = async (args, argOpts) => {
   }
   await downloadDb(appId, token, folder);
   return true;
-}
+};
 
 module.exports = { deployApi, deployFilesystem, deployDb };
