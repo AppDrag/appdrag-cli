@@ -7,7 +7,6 @@ const chalk = require('chalk');
 const util = require('util');
 
 const deployFilesystem = async (args, argOpts) => {
-  console.log(args);
   if (args.length <= 0) {
     console.log(chalk.red('Please refer to the help command'));
     return;
