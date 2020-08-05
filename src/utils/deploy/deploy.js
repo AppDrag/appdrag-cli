@@ -548,7 +548,9 @@ const appConfigJson = (appId, funcJson, baseFolder) => {
       } else {
         pathToFunction = `/${func.name}`;
       }
+      let pathToFolder = pathToFunction.split('/').slice(0,-1).join('/') + '/';
       object.apiEndpoints[`${pathToFunction}`] = { 
+          src:`./api${pathToFolder}`,
           vpath: `./api${pathToFunction}`,
           realpath:  `./${baseFolder}/api${pathToFunction}`,
           handler: `${func.name}.handler`,
