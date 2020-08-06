@@ -144,6 +144,7 @@ const deployCloudBackend = async (token, appId, funcs, baseFolder) => {
       await downloadAndWriteFunction(token, appId, filePath, func, apiKey);
     });
   }
+  return apiKey;
 };
 
 const flattenFunctionList = (functions) => {
@@ -527,7 +528,7 @@ const downloadDb = async (appId, token, folder) => {
   });
 };
 
-const appConfigJson = (appId, funcJson, baseFolder) => {
+const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
   let object = {
     "env": "PROD",
     "version": "1.0.0",
@@ -538,6 +539,10 @@ const appConfigJson = (appId, funcJson, baseFolder) => {
     "TypeAPI": "LOCAL",
     "TypeFS": "LOCAL",
     "redirect404toIndex": true,
+    "globalEnv" : {
+      APPID: appId,
+      APIKEY: apiKey
+    }
     "db": {
       "MYSQL": {
           "dump": `./DB/db.sql`,

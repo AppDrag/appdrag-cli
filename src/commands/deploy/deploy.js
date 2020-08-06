@@ -81,8 +81,8 @@ const deployApi = async (args, argOpts) => {
   }
   writeScriptFile(functionList, baseFolder);
   let flattenedList = flattenFunctionList(functionList);
-  await deployCloudBackend(token, appId, flattenedList, baseFolder);
-  appConfigJson(appId, flattenedList, baseFolder);
+  let apiKey = await deployCloudBackend(token, appId, flattenedList, baseFolder);
+  appConfigJson(appId, flattenedList, baseFolder, apiKey);
   return true;
 };
 
