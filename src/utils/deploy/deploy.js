@@ -140,6 +140,8 @@ const deployCloudBackend = async (token, appId, funcs, baseFolder) => {
         writeInsertVSQLFile(func, filePath);
       } else if (func.type === 'DELETE') {
         writeDeleteVSQLFile(func, filePath);
+      } else if (func.type.slice(0,3) === 'SQL') {
+        writeSQLFile(func, filePath);
       }
       await downloadAndWriteFunction(token, appId, filePath, func, apiKey);
     });
@@ -479,6 +481,11 @@ const writeDeleteVSQLFile = (functionObj, filePath) => {
   fs.writeFileSync(`./${filePath}/${functionObj.name}.sql`, finalQuery);
 };
 
+const writeSQLFile = (functionObj, filePath) => {
+  fs.writeFileSync(`./${filePath}/${functionObj.name}.sql`, functionObj.sourceCode);
+  return;
+};
+
 const getFunctionURL = async (data) => {
   let opts = {
     method: 'POST',
@@ -587,7 +594,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
       if (func.envVars) {
         object.apiEndpoints[`${pathToFunction}`].envVars = JSON.parse(func.envVars);
       }
-      if (func.type !== "SELECT" && func.type !== "UPDATE" && func.type !== "DELETE" && func.type !== "INSERT") {
+      if (func.type !== "SELECT" && func.type !== "UPDATE" && func.type !== "DELETE" && func.type !== "INSERT" && func.type.slice(0,3) !== 'SQL') {
         delete object.apiEndpoints[`${pathToFunction}`].sourceCode;
         delete object.apiEndpoints[`${pathToFunction}`].mappingColumns;
         delete object.apiEndpoints[`${pathToFunction}`].outputColumns;
