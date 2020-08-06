@@ -517,13 +517,13 @@ const downloadDb = async (appId, token, folder) => {
     return;
   }
   databaseUrl = databaseUrl.url;
-  let file = fs.createWriteStream(`${folder}/${appId}_backup.sql`);
+  let file = fs.createWriteStream(`${folder}/DB/db.sql`);
   let response = await fetch(databaseUrl, {
     method: 'GET',
   });
   response.body.pipe(file);
   file.on('close', () => {
-    console.log(chalk.green(`Done writing ${appId}_backup.sql !`));
+    console.log(chalk.green(`Done writing ${folder}/DB/db.sql !`));
   });
 };
 
@@ -538,6 +538,18 @@ const appConfigJson = (appId, funcJson, baseFolder) => {
     "TypeAPI": "LOCAL",
     "TypeFS": "LOCAL",
     "redirect404toIndex": true,
+    "db": {
+      "MYSQL": {
+          "dump": `./DB/db.sql`,
+          "database": `${appId}`,
+          "host": "AUTO",
+          "port": "AUTO",
+          "user": "AUTO",
+          "password": "AUTO",
+          "apiToken": "AUTO",
+          "apiEndpoint": ""
+      }
+    },
     "apiEndpoints": {}
   };
   for (const key in funcJson) {

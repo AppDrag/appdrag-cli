@@ -102,6 +102,9 @@ const deployDb = async (args, argOpts) => {
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder);
     }
+    if (!fs.existsSync(`${folder}/DB`)) {
+      fs.mkdirSync(`${folder}/DB`);
+    }
   }
   await downloadDb(appId, token, folder);
   return true;
