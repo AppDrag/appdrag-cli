@@ -542,7 +542,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "globalEnv" : {
       APPID: appId,
       APIKEY: apiKey
-    }
+    },
     "db": {
       "MYSQL": {
           "dump": `./DB/db.sql`,
