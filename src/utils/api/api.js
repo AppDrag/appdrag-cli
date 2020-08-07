@@ -94,7 +94,7 @@ const writeScriptFile = (functionList, baseFolder = '') => {
       }
     });
     if (baseFolder === '') {
-      fs.writeFileSync(`./install.sh`, 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
+      fs.writeFileSync(`./install.sh`, 'npm init --force --yes\nnpm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
     } else {
       fs.writeFileSync(`./${baseFolder}/install.sh`, 'npm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
     }
