@@ -264,7 +264,7 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
         if (condition.value === null) {
           return;
         }
-        value = condition.value.replace("'", "''");
+        value = ' @PARAM_' + condition.value.replace("'", "''");
       }
       let quotedValue = value;
       let matchValue = condition.signOperator + quotedValue;
@@ -546,6 +546,8 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "TypeAPI": "LOCAL",
     "TypeFS": "LOCAL",
     "redirect404toIndex": true,
+    "acceptedFiles": "*.jpg|*.png|*.mp4|*.zip|*.jpeg|*.pdf",
+    "uploadFolder": "public/uploads/",
     "globalEnv" : {
       APPID: appId,
       APIKEY: apiKey
@@ -590,6 +592,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
           outputColumns: JSON.parse(func.outputColumns),
           mappingColumns: JSON.parse(func.mappingColumns),
           sourceCode: func.sourceCode,
+          isPrivate: func.isPrivate
       };
       if (func.envVars) {
         object.apiEndpoints[`${pathToFunction}`].envVars = JSON.parse(func.envVars);
