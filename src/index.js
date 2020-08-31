@@ -46,6 +46,10 @@ async function main() {
         'Invalid command, please refer to the \'help\' command.\n'
       ));
     }
+  } else {
+    console.log(chalk.red(
+        'Invalid command, please refer to the \'help\' command.\n'
+      ));
   }
 
 }

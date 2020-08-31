@@ -6,16 +6,8 @@ const fs = require('fs');
 const chalk = require('chalk');
 const util = require('util');
 
-const deployFilesystem = async (args, argOpts) => {
-  if (args.length <= 0) {
-    console.log(chalk.red('Please refer to the help command'));
-    return;
-  }
-  let appId = setupCheck(argOpts);
-  if (!appId) {
-    return;
-  }
-  let token = tokenObj.token;
+const deployFilesystem = async (args, appId, token) => {
+
   if (args[0]) {
     if (!(fs.existsSync(args[0]))) {
       fs.mkdirSync(args[0]);
@@ -49,16 +41,8 @@ const deployFilesystem = async (args, argOpts) => {
   return true;
 }
 
-const deployApi = async (args, argOpts) => {
-  if (args.length <= 0) {
-    console.log(chalk.red('Please refer to the help command'));
-    return;
-  }
-  let appId = setupCheck(argOpts);
-  if (!appId) {
-    return;
-  }
-  let token = tokenObj.token;
+const deployApi = async (args, appId, token) => {
+
   let response = await getFunctionsList(appId, token);
   if (response.status == 'KO') {
     if (tokenObj.method == 'login') {
@@ -86,16 +70,7 @@ const deployApi = async (args, argOpts) => {
   return true;
 };
 
-const deployDb = async (args, argOpts) => {
-  if (args.length <= 0) {
-    console.log(chalk.red('Please refer to the help command'));
-    return;
-  }
-  let appId = setupCheck(argOpts);
-  if (!appId) {
-    return;
-  }
-  let token = tokenObj.token;
+const deployDb = async (args, appId, token) => {
   let folder = '.';
   if (args[0]) {
     folder = args[0];
@@ -111,14 +86,23 @@ const deployDb = async (args, argOpts) => {
 };
 
 const exportProject = async (args, argOpts) => {
-  await deployFilesystem(args, argOpts);
-  if (args[0]) {
+  if (args.length <= 0) {
+    console.log(chalk.red('Please refer to the help command'));
+    return;
+  }
+  let appId = setupCheck(argOpts);
+  if (!appId) {
+    return;
+  }
+  let token = tokenObj.token;
+  await deployFilesystem(args, appId, token);
+  if (args[0] && args[0] != '.') {
     process.chdir('../..');
   } else {
     process.chdir('..');
   }
-  await deployApi(args, argOpts);
-  await deployDb(args, argOpts);
+  await deployApi(args, appId, token);
+  await deployDb(args, appId, token);
   return;
 }
 module.exports = { deployApi, deployFilesystem, deployDb, exportProject };
