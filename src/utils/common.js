@@ -107,10 +107,8 @@ const help = () => {
   console.log(chalk.blue('\n-- Api - CloudBackend'));
   console.log('  ', chalk.yellow('api push'), ' \t<opt: function_id>\t\tPull all (or one) function(s) from your CloudBackend');
   console.log('  ', chalk.yellow('api pull'), ' \t<opt: function_id>\t\tPush all (or one) function(s) of your CloudBackend');
-  console.log(chalk.blue('\n-- Deploy'));
-  console.log('  ', chalk.yellow('deploy fs'), ' \t<path>\t\t\t\tDeploys all your non-CloudBackend related files to the specified folder');
-  console.log('  ', chalk.yellow('deploy api'), ' \t<path>\t\t\t\tDeploys all the functions from your CloudBackend to the specified folder');
-  console.log('  ', chalk.yellow('deploy db'), ' \t<path>\t\t\t\tDeploys the database from your CloudBackend to the specified folder');
+  console.log(chalk.blue('\n-- Export'));
+  console.log('  ', chalk.yellow('export'), ' \t<path>\t\t\t\tExport your project to the specified folder');
   console.log(chalk.blue('\n-- Help'));
   console.log('  ', chalk.yellow('help'), ' \t\t\t\t\tDisplays this help text');
 };

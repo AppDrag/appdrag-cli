@@ -61,7 +61,7 @@ Available commands :
 
 ### Database - CloudBackend
 
-   `appdrag db pull` 					                     Retrieves .sql file of your database from SERVER to LOCAL
+   `appdrag db pull` 					                     Retrieve .sql file of your database from SERVER to LOCAL
    
    `appdrag db push  	<sql-file>` 			            Restore the database on SERVER from the LOCAL .sql backup provided
    
@@ -75,11 +75,11 @@ Available commands :
    
 ### Export
 
-   `export  	<path>`		                    Exports your project to the specified folder
+   `export  	<path>`		                    Export your project to the specified folder
 
 ### Help
 
-   `help` 					                    Displays this help text
+   `help` 					                    Display this help text
    
 ## Usage examples
 

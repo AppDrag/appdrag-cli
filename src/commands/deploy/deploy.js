@@ -7,7 +7,6 @@ const chalk = require('chalk');
 const util = require('util');
 
 const deployFilesystem = async (args, appId, token) => {
-
   if (args[0]) {
     if (!(fs.existsSync(args[0]))) {
       fs.mkdirSync(args[0]);

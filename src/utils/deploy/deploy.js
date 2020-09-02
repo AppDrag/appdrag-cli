@@ -3,9 +3,6 @@ const fetch = require('node-fetch');
 const unzipper = require('unzipper');
 const fs = require('fs');
 const chalk = require('chalk');
-const { writeScriptFile } = require('../api/api');
-const { restoreDefaultPrompts } = require('inquirer');
-
 
 const parseDirectory = (token, appId, files, lastfile, currentPath) => {
   return new Promise( async (resolve, reject) => {
@@ -122,7 +119,8 @@ const deployCloudBackend = async (token, appId, funcs, baseFolder) => {
   }
   for (const funcFolder in funcs) {
     let basePath = `${baseFolder}/api`;
-    funcs[funcFolder].functions.forEach(async (func) => {
+    for (let x = 0; x < funcs[funcFolder].functions.length ;x++) {
+      let func = funcs[funcFolder].functions[x];
       let filePath = '';
       if (!funcs[funcFolder].name) {
          filePath += `${basePath}`;
@@ -144,7 +142,7 @@ const deployCloudBackend = async (token, appId, funcs, baseFolder) => {
         writeSQLFile(func, filePath);
       }
       await downloadAndWriteFunction(token, appId, filePath, func, apiKey);
-    });
+    }
   }
   return apiKey;
 };
@@ -177,7 +175,7 @@ const flattenFunctionList = (functions) => {
 };
 
 const downloadAndWriteFunction = async (token, appId, path, functionObj, apiKey) => {
-  let filePath = `${path}/${appId}_${functionObj.id}.zip`;
+  let filePath = `./${path}/${appId}_${functionObj.id}.zip`;
   let data = {
     command: 'CloudAPIExportFile',
     token: token,
@@ -246,7 +244,7 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
   let columns = "";
   let whereConditions = JSON.parse(functionObj.whereConditions);
   let outputColumns = JSON.parse(functionObj.outputColumns);
-  if (outputColumns !== []) {
+  if (outputColumns !== [] && outputColumns) {
     outputColumns.map((col) => {
       columns += `${col},`;
     });
@@ -255,7 +253,7 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
     finalQuery += `SELECT ${columns} FROM ${functionObj.tableName}`;
   }
   let where = "";
-  if (whereConditions !== []) {
+  if (whereConditions !== [] && whereConditions) {
     whereConditions.map((condition) => {
       let value = "";
       if (condition.type == "value" || condition.type == "formula") {
@@ -302,20 +300,27 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
   // ORDER BY ==============================
   if (functionObj.orderByColumn != ""){
     let orderBy = "";
-    let orderByDirections = functionObj.orderByDirection.split(',');
+    let orderByDirections = functionObj.orderByDirection;
     let idx = 0;
-    functionObj.orderByColumn.split(',').forEach((column) => {
-      if (orderBy!= "")
-      {
-        orderBy += ", ";
-      }
-      orderBy += "`" + column + "`";
-      if (idx < orderByDirections.Length)
-      {
-        orderBy += " " + orderByDirections[idx];
-      }
-      idx++;
-    });
+    if (orderByDirections !== null) {
+      orderByDirections = orderByDirections.split(',');
+    }
+    let orderByColumn = functionObj.orderByColumn;
+    if (orderByColumn !== null) {
+      orderByColumn = orderByColumn.split(',');
+      orderByColumn.forEach((column) => {
+        if (orderBy!= "")
+        {
+          orderBy += ", ";
+        }
+        orderBy += "`" + column + "`";
+        if (idx < orderByDirections.Length)
+        {
+          orderBy += " " + orderByDirections[idx];
+        }
+        idx++;
+      });
+    }
     if (orderBy != "") {
       finalQuery += " ORDER BY " + orderBy;
     }
@@ -329,26 +334,28 @@ const writeUpdateVSQLFile = (functionObj, filePath) => {
   let whereConditions = JSON.parse(functionObj.whereConditions);
 
   let updateStr = "";
-  mappingColumns.forEach((condition) => {
-    let value = "";
-    if (condition.type == 'value' || condition.type=='formula') {
-      value = condition.value;
-    } else {
-      if (condition.value == null) {
-        return;
+  if (mappingColumns) {
+    mappingColumns.forEach((condition) => {
+      let value = "";
+      if (condition.type == 'value' || condition.type=='formula') {
+        value = condition.value;
+      } else {
+        if (condition.value == null) {
+          return;
+        }
       }
-    }
-    if (updateStr != ""){
-      updateStr += ",";
-    }
-    if (condition.type != "formula") {
-      value = "'" + value + "'";
-    }
-    updateStr += "`" +condition.column + "`=" + value + " ";
-  });
+      if (updateStr != ""){
+        updateStr += ",";
+      }
+      if (condition.type != "formula") {
+        value = "'" + value + "'";
+      }
+      updateStr += "`" +condition.column + "`=" + value + " ";
+    });
+  }
   finalQuery += updateStr;
   let where = "";
-  if (whereConditions !== []) {
+  if (whereConditions !== [] && whereConditions) {
     whereConditions.map((condition) => {
       let value = "";
       if (condition.type == "value" || condition.type == "formula") {
@@ -434,7 +441,7 @@ const writeDeleteVSQLFile = (functionObj, filePath) => {
   let whereConditions = JSON.parse(functionObj.whereConditions);
 
   let where = "";
-  if (whereConditions !== []) {
+  if (whereConditions !== [] && whereConditions) {
     whereConditions.map((condition) => {
       let value = "";
       if (condition.type == "value" || condition.type == "formula") {
@@ -490,7 +497,7 @@ const getFunctionURL = async (data) => {
   let opts = {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    body: new URLSearchParams(data)
+    body: new URLSearchParams(data).toString()
   };
   let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
   res = await res.json();
