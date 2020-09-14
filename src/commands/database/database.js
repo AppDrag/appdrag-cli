@@ -3,12 +3,12 @@ const { downloadDb, pushDbToCloudBackend } = require('../../utils/database/datab
 const fs = require('fs');
 const chalk = require('chalk');
 
-const pushDatabase = async (args) => {
+const pushDatabase = async (args, argOpts) => {
   if (args.length <= 0) {
     console.log(chalk.red('File argument needed, please refer to the help command'));
     return;
   }
-  let appId = setupCheck();
+  let appId = setupCheck(argOpts);
   if (!appId) {
     return;
   }
@@ -22,8 +22,8 @@ const pushDatabase = async (args) => {
   return true;
 }
 
-const pullDatabase = async (args) => {
-  let appId = setupCheck();
+const pullDatabase = async (args, argOpts) => {
+  let appId = setupCheck(argOpts);
   if (!appId) {
     return;
   }
