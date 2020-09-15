@@ -25,7 +25,7 @@ const deployFilesystem = async (args, appId, token) => {
       files = await getDirectoryListing(token, appId, '');
       if (files.status == 'KO') {
         console.log(chalk.red('Please log-in again'));
-        return;
+        return false;
       }
     } else {
       console.log(chalk.red('The token used through the -t option may be incorrect/invalid.'));
@@ -94,7 +94,10 @@ const exportProject = async (args, argOpts) => {
     return;
   }
   let token = tokenObj.token;
-  await deployFilesystem(args, appId, token);
+  let isDeployed = await deployFilesystem(args, appId, token);
+  if (!isDeployed) {
+    return;
+  }
   if (args[0] && args[0] != '.') {
     process.chdir('../..');
   } else {

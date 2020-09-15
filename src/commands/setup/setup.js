@@ -2,7 +2,7 @@ const CryptoJS = require('crypto-js');
 const fs = require('fs');
 
 const Spinner = require('cli-spinner').Spinner;
-var spinner = new Spinner('Logging in....%s');
+var spinner = new Spinner('Logging in.... %s');
 spinner.setSpinnerString(18);
 
 const chalk = require('chalk');
@@ -39,7 +39,7 @@ const login = async () => {
     return;
   }
   spinner.stop();
-  console.log(chalk.greenBright('A verification code has been sent to your email'));
+  console.log(chalk.greenBright('\nA verification code has been sent to your email'));
   inputs = await codePrompt();
   data.append('verificationCode', inputs.code);
   userData = await requestLogin(data);
