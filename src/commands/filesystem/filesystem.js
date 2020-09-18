@@ -24,7 +24,7 @@ const pushFilesystem = async (args, argOpts) => {
     console.log(chalk.red('Error during archiving process, please specify a folder not a file.'));
     return;
   }
-  if (args.length === 2) {
+  if (args.length === 1) {
     destPath = '';
   } else {
     if (args[1][args[1].length - 1] === '/') {
