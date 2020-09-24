@@ -3,6 +3,8 @@ const fetch = require('node-fetch');
 const unzipper = require('unzipper');
 const fs = require('fs');
 const chalk = require('chalk');
+const { downloadFile } = require('../../utils/common');
+
 
 const parseDirectory = (token, appId, files, lastfile, currentPath) => {
   return new Promise( async (resolve, reject) => {
@@ -29,23 +31,17 @@ const parseDirectory = (token, appId, files, lastfile, currentPath) => {
             resolve();
           }
           else continue;
+        } else {
+          await downloadFile(path, appId);
         }
-        let file = fs.createWriteStream(path, {'encoding': 'utf-8'});
-        let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
-          method: 'GET'
-        });
-        response.body.pipe(file);
-        file.on('finish', () => {
-          console.log(chalk.green(`done writing : ${path}`));
-          file.close();
-          if (path === lastfile) {
-            resolve();
-          }
-        });
+            if (path === lastfile) {
+              resolve();
+            }
       }
     }
+    resolve();
   });
-}
+};
 
 const isFolder = async (token, appId, folder, path) => {
 if (!fs.existsSync(path)) {

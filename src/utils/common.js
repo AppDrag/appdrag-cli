@@ -6,6 +6,8 @@ const fs = require('fs');
 const chalk = require('chalk');
 const Configstore = require('configstore');
 const fetch = require('node-fetch');
+const util = require('util');
+const streamPipeline = util.promisify(require('stream').pipeline);
 
 const APP_ID_PATH = '.appdrag';
 const currFolder = process.cwd();
@@ -124,6 +126,22 @@ const refreshToken = async (refreshToken) => {
   return response.json();
 };
 
+const downloadFile = async (path, appId) => {
+  let file = fs.createWriteStream(path);
+  let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
+    method: 'GET'
+  });
+  if (!response.ok) console.log(`${response.statusText}`);
+  else {
+    try {
+      await streamPipeline(response.body, file);
+      console.log(chalk.green(`done writing : ${path}`));
+    } catch (err) {
+      console.log(chalk.red(`${err}`));
+    }
+  }
+};
+
 module.exports = {
   config,
   setupCheck,
@@ -132,5 +150,6 @@ module.exports = {
   checkLogin,
   currFolder,
   refreshToken,
-  tokenObj
+  tokenObj,
+  downloadFile
 }

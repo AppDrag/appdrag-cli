@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const archiver = require('archiver');
 const chalk = require('chalk')
-const { config, refreshToken, tokenObj } = require('../common')
+const { config, refreshToken, tokenObj, downloadFile } = require('../common')
 
 const createZip = async (sourceFolder, zipPath, currFolder) => {
   let isErr = false;
@@ -91,6 +91,7 @@ const pushToAwsS3 = async (fileContent, fileSizeInBytes, url) => {
   let response = await fetch(url, opts);
   try {
     response = await response.json();
+    console.log(response);
     return response;
   } catch {
     return response;
@@ -162,21 +163,7 @@ const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
           await parseDirectory(token, appId, newFiles, lastfile, path);
         }
       } else {
-        let file = fs.createWriteStream(path, {'encoding': 'utf-8'});
-        let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
-          method: 'GET'
-        });
-       response.body.pipe(file);
-       file.on('error', (err) => {
-        console.log(chalk.blue(`error, ${err}`));
-       })
-        file.on('finish', () => {
-          console.log(chalk.green(`done writing : ${path}`));
-          file.close();
-          if (path === lastfile) {
-            return true;
-          }
-        });
+        await downloadFile(path, appId);
       }
     }
 };
@@ -190,20 +177,7 @@ const isFolder = async (token, appId, folder, path) => {
 }
 
 const pullSingleFile = async (appId, path) => {
-  let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${path}`, {
-    method: 'GET'
-  });
-  if (response.status === 403) {
-    console.log(chalk.red('File/folder does not exist.'));
-    return;
-  } else {
-    let file = fs.createWriteStream(path, {'encoding': 'utf-8'});
-    response.body.pipe(file);
-    file.on('finish', () => {
-      console.log(chalk.green(`done writing : ${path}`));
-      file.close();
-    });
-  }
+  await downloadFile(path, appId);
 }
 
 module.exports = { zipFolder, createZip, pushFiles, getDirectoryListing, parseDirectory, getSignedURL, pushToAwsS3, pullSingleFile };
