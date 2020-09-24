@@ -95,8 +95,10 @@ const writeScriptFile = (functionList, baseFolder = '') => {
     });
     if (baseFolder === '') {
       fs.writeFileSync(`./install.sh`, 'npm init --force --yes\nnpm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
+      fs.chmodSync(`./install.sh`, "755");
     } else {
       fs.writeFileSync(`./${baseFolder}/install.sh`, 'npm init --force --yes\nnpm install ' + modules.join('\nnpm install ').replace(/,/g, " "));
+      fs.chmodSync(`./${baseFolder}/install.sh`, "755");
     }
 }
 
