@@ -89,8 +89,8 @@ const help = () => {
       'AppDrag'
     )
   );
-  console.log(chalk.underline('appdrag-cli v1.01'));
-  console.log(chalk.bold('Usage'), ': appdrag-cli', chalk.yellow('command'), chalk.gray('<args>'), chalk.cyan('-options'));
+  console.log(chalk.underline('appdrag v1.3.0'));
+  console.log(chalk.bold('Usage'), ': appdrag', chalk.yellow('command'), chalk.gray('<args>'), chalk.cyan('-options'));
   console.log(chalk.bold('\nOptions:'));
   console.log(chalk.cyan('-a [appId]'),': Input your appId directly in the command line instead of using', chalk.yellow('init'), '.');
   console.log(chalk.cyan('-t [token]'),': Input your token directly in the command line instead of using', chalk.yellow('login'), '.');
