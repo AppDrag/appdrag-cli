@@ -611,6 +611,13 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "TypeFS": "LOCAL",
     "redirect404toIndex": true,
     "acceptedFiles": "*.jpg|*.png|*.mp4|*.zip|*.jpeg|*.pdf",
+    "HSTS": false,
+    "rateLimiter" : {
+      "requestsPerSecond" : 10
+    },
+    "CORS": {
+        "access-control-allow-origin": "*"
+    },
     "uploadFolder": "public/uploads/",
     "globalEnv" : {
       APPID: appId,
@@ -639,7 +646,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
         pathToFunction = `/${func.name}`;
       }
       let pathToFolder = pathToFunction.split('/').slice(0,-1).join('/') + '/';
-      object.apiEndpoints[`${pathToFunction}`] = { 
+      object.apiEndpoints[`/api${pathToFunction}`] = { 
           src:`./api${pathToFolder}`,
           vpath: `./api${pathToFunction}`,
           realpath:  `./${baseFolder}/api${pathToFunction}`,
