@@ -612,9 +612,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "redirect404toIndex": true,
     "acceptedFiles": "*.jpg|*.png|*.mp4|*.zip|*.jpeg|*.pdf",
     "HSTS": false,
-    "rateLimiter" : {
-      "requestsPerSecond" : 10
-    },
+    "maxRequestsPerMinutePerIP": 120,
     "CORS": {
         "access-control-allow-origin": "*"
     },
