@@ -671,20 +671,36 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
           isPrivate: func.isPrivate
       };
       if (func.envVars) {
-        object.apiEndpoints[`${pathToFunction}`].envVars = JSON.parse(func.envVars);
+            try{
+                object.apiEndpoints[`/api${pathToFunction}`].envVars = JSON.parse(func.envVars);
+            }
+            catch(ex){
+                console.log(ex);
+                console.log(pathToFunction);
+            }
       }
       if (func.type !== "SELECT" && func.type !== "UPDATE" && func.type !== "DELETE" && func.type !== "INSERT" && func.type.slice(0,3) !== 'SQL') {
-        delete object.apiEndpoints[`${pathToFunction}`].sourceCode;
-        delete object.apiEndpoints[`${pathToFunction}`].mappingColumns;
-        delete object.apiEndpoints[`${pathToFunction}`].outputColumns;
-        delete object.apiEndpoints[`${pathToFunction}`].orderByColumn;
-        delete object.apiEndpoints[`${pathToFunction}`].orderByDirection;
-        delete object.apiEndpoints[`${pathToFunction}`].tableName;
-        delete object.apiEndpoints[`${pathToFunction}`].whereConditions;
+        try{
+            delete object.apiEndpoints[`/api${pathToFunction}`].sourceCode;
+            delete object.apiEndpoints[`/api${pathToFunction}`].mappingColumns;
+            delete object.apiEndpoints[`/api${pathToFunction}`].outputColumns;
+            delete object.apiEndpoints[`/api${pathToFunction}`].orderByColumn;
+            delete object.apiEndpoints[`/api${pathToFunction}`].orderByDirection;
+            delete object.apiEndpoints[`/api${pathToFunction}`].tableName;
+            delete object.apiEndpoints[`/api${pathToFunction}`].whereConditions;
+        }
+        catch(ex){
+            console.log(ex);
+            console.log(func.type);
+            console.log(pathToFunction);
+        }
+        
       }
     });
   }
-  let toWrite = JSON.stringify(object);
+  //let toWrite = JSON.stringify(object);
+  let toWrite = JSON.stringify(object, null, 4);
+    
   fs.writeFileSync(`./${baseFolder}/appconfig.json`, toWrite);
   return;
 };
