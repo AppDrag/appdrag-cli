@@ -609,8 +609,8 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "publicFolder": "./public",
     "TypeAPI": "LOCAL",
     "TypeFS": "LOCAL",
-    "redirect404toIndex": true,
-    "acceptedFiles": "*.jpg|*.png|*.mp4|*.zip|*.jpeg|*.pdf",
+    "redirect404toIndex": false,
+    "acceptedFiles": "*.jpg|*.png|*.mp4|*.zip|*.jpeg|*.pdf|*.docx|*.xlsx|*.pptx",
     "HSTS": false,
     "maxRequestsPerMinutePerIP": 120,
     "CORS": {
