@@ -51,16 +51,24 @@ let newFiles = await getDirectoryListing(token, appId, path);
 return newFiles;
 }
 
+//TODO: 1e128 files should be locally downloaded & hosted!
 const replaceLinks = (filePath, appId) => {
   if (fs.existsSync(filePath)) {
     let file_content = fs.readFileSync(filePath);
-    let regexp = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/`,"g");
+    
+    let regexp0 = new RegExp(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/`,"g");
+    let regexp1 = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/`,"g");
     let regexp2 = new RegExp(`https://cf.appdrag.com/${appId}/`,"g")
     let regexp3 = new RegExp(`//cf.appdrag.com/${appId}/`, "g");
     let regexp4 = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/`,"g");
     let regexp5 = new RegExp('//cf.appdrag.com/resources/',"g");
+    let regexp6 = new RegExp(`https://${appId}.appdrag.com/`, "g");
+    let regexp7 = new RegExp(`https://${appId}.appdrag.site/`, "g");
+
     file_content = file_content.toString('utf-8');
-    file_content = file_content.replace(regexp, "./").replace(regexp2,'./').replace(regexp3,'./').replace(regexp4, './').replace(regexp5, './');
+    file_content = file_content.replace(regexp0, "./").replace(regexp1, "./").replace(regexp2,'./')
+    .replace(regexp3,'./').replace(regexp4, 'https://1e128.net/')
+    .replace(regexp5, 'https://1e128.net/').replace(regexp6, './').replace(regexp7, './');
     fs.writeFileSync(filePath, file_content);
     console.log(chalk.blue(`Replacing contents of ${filePath}`))
   }
