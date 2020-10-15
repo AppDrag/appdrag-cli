@@ -254,6 +254,11 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
     });
     columns = columns.slice(0, -1);
 
+    if ( columns.trim() == "" ){
+        //this means we need to select all columns
+        columns = "*";
+    }
+
     finalQuery += `SELECT ${columns} FROM ${functionObj.tableName}`;
   }
   let where = "";
@@ -266,10 +271,10 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
         if (condition.value === null) {
           return;
         }
-        value = ' @PARAM_' + condition.value.replace("'", "''");
+        value = '@PARAM_' + condition.value.replace("'", "''");
       }
-      let quotedValue = value;
-      let matchValue = condition.signOperator + quotedValue;
+      let quotedValue = "'" + value + "'";
+      let matchValue = condition.signOperator + " " + quotedValue;
       if (condition.signOperator == "contains")
       {
           matchValue = "LIKE '%" + value + "%'";
@@ -292,11 +297,11 @@ const writeSelectVSQLFile = (functionObj, filePath) => {
       }
       else if (condition.signOperator == "is")
       {
-          matchValue = "IS " + value;
+          matchValue = "IS " + quotedValue;
       }
       else if (condition.signOperator == "is not")
       {
-          matchValue = "IS NOT " + value;
+          matchValue = "IS NOT " + quotedValue;
       }
       finalQuery += " " + condition.conditionOperator + " `" + condition.column + "` " + matchValue;
     });
