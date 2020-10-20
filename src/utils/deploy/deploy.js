@@ -60,15 +60,26 @@ const replaceLinks = (filePath, appId) => {
     let regexp1 = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/`,"g");
     let regexp2 = new RegExp(`https://cf.appdrag.com/${appId}/`,"g")
     let regexp3 = new RegExp(`//cf.appdrag.com/${appId}/`, "g");
+    let regexp3_1 = new RegExp(`//cf.appdrag.com/resources/appallin-universal-theme.css`, "g");
     let regexp4 = new RegExp(`//s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/`,"g");
     let regexp5 = new RegExp('//cf.appdrag.com/resources/',"g");
     let regexp6 = new RegExp(`https://${appId}.appdrag.com/`, "g");
     let regexp7 = new RegExp(`https://${appId}.appdrag.site/`, "g");
+    
 
     file_content = file_content.toString('utf-8');
-    file_content = file_content.replace(regexp0, "./").replace(regexp1, "./").replace(regexp2,'./')
-    .replace(regexp3,'./').replace(regexp4, 'https://1e128.net/')
-    .replace(regexp5, 'https://1e128.net/').replace(regexp6, './').replace(regexp7, './');
+    file_content = file_content.replace(regexp0, "./")
+    .replace(regexp1, "./")
+    .replace(regexp2,'./')
+    .replace(regexp3,'./')
+    .replace(regexp3_1,'./css/appallin-universal-theme.css')
+    .replace(regexp4, './')
+    .replace(regexp5, './')
+    .replace(regexp6, './')
+    .replace(regexp7, './');
+
+    //file_content = file_content.replace("https://1e128.net/assets/fontawesome/css/fa5.css", '../css/fa5.css');
+
     fs.writeFileSync(filePath, file_content);
     console.log(chalk.blue(`Replacing contents of ${filePath}`))
   }
@@ -76,11 +87,43 @@ const replaceLinks = (filePath, appId) => {
 
 const parseHtmlFiles = (appId) => {
   let files = fs.readdirSync('.');
+  //console.log("files in root folder: " + files.length);
   files.forEach((file) => {
-    if (file.slice(-5) == '.html') {
+    var fileExt = file.split('.').pop();
+    if (fileExt == 'html') {
       replaceLinks('./' + file, appId);
     }
   });
+
+  /*
+  files = fs.readdirSync('./preview/');
+  //console.log("files in preview folder: " + files.length);
+  files.forEach((file) => {
+    var fileExt = file.split('.').pop();
+    if (fileExt == 'html') {
+      replaceLinks('./' + file, appId);
+    }
+  });
+
+  files = fs.readdirSync('./css/');
+  //console.log("files in css folder: " + files.length);
+  files.forEach((file) => {
+    var fileExt = file.split('.').pop();
+    if (fileExt == 'css') {
+      replaceLinks('./css/' + file, appId);
+    }
+  });
+
+  files = fs.readdirSync('./js/');
+  //console.log("files in js folder: " + files.length);
+  files.forEach((file) => {
+    var fileExt = file.split('.').pop();
+    if (fileExt == 'js') {
+      replaceLinks('./js/' + file, appId);
+    }
+  });
+  */
+
 }
 
 const downloadResources = async () => {
@@ -91,26 +134,147 @@ const downloadResources = async () => {
   if (!fs.existsSync('css')) {
     fs.mkdirSync('css');
   }
-  let urls = [
-    'https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/css/appdrag.css',
-    'https://cf.appdrag.com/resources/appallin-universal-theme.css',
-    'https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/js/appdrag.js'
-  ];
+  if (!fs.existsSync('webfonts')) {
+    fs.mkdirSync('webfonts');
+  }
+
+  var urls = [{
+      url: "https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/css/appdrag.css",
+      local: "css/appdrag.css"
+  },
+  {
+      url: "https://cf.appdrag.com/resources/appallin-universal-theme.css",
+      local: "css/appallin-universal-theme.css"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/css/fa5.css",
+      local: "css/fa5.css"
+  },
+  {
+      url: "https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/js/appdrag.js",
+      local: "js/appdrag.js"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-light-300.eot",
+      local: "webfonts/fa-light-300.eot"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-light-300.woff2",
+      local: "webfonts/fa-light-300.woff2"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-light-300.woff",
+      local: "webfonts/fa-light-300.woff"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-light-300.ttf",
+      local: "webfonts/fa-light-300.ttf"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-brands-400.eot",
+      local: "webfonts/fa-brands-400.eot"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-brands-400.woff2",
+      local: "webfonts/fa-brands-400.woff2"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-brands-400.woff",
+      local: "webfonts/fa-brands-400.woff"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-brands-400.ttf",
+      local: "webfonts/fa-brands-400.ttf"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-regular-400.eot",
+      local: "webfonts/fa-regular-400.eot"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-regular-400.woff2",
+      local: "webfonts/fa-regular-400.woff2"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-regular-400.woff",
+      local: "webfonts/fa-regular-400.woff"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-regular-400.ttf",
+      local: "webfonts/fa-regular-400.ttf"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-solid-900.eot",
+      local: "webfonts/fa-solid-900.eot"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-solid-900.woff2",
+      local: "webfonts/fa-solid-900.woff2"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-solid-900.woff",
+      local: "webfonts/fa-solid-900.woff"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-solid-900.ttf",
+      local: "webfonts/fa-solid-900.ttf"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-duotone-900.eot",
+      local: "webfonts/fa-duotone-900.eot"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-duotone-900.woff2",
+      local: "webfonts/fa-duotone-900.woff2"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-duotone-900.woff",
+      local: "webfonts/fa-duotone-900.woff"
+  },
+  {
+      url: "https://1e128.net/assets/fontawesome/webfonts/fa-duotone-900.ttf",
+      local: "webfonts/fa-duotone-900.ttf"
+  },
+  {
+      url: "https://cf.appdrag.com/resources/builder/transparency-large%20(normal).png",
+      local: "css/transparency-large (normal).png"
+  }];
+
+
   for (let x = 0; x < urls.length ;x++) {
-    let path = urls[x].replace(/.*resources\//g, "");
+
+    let path = urls[x].local;
     let file = fs.createWriteStream(path, { encoding: 'utf8' });
-    let response = await fetch(urls[x], {
+    let response = await fetch(urls[x].url, {
       method: 'GET',
     });
     response.body.pipe(file);
     file.on('finish', () => {
-      if (path === urls[urls.length - 1].replace(/.*resources\//g, "")) {
-        console.log('Done downloading')
+
+      if ( path == "js/appdrag.js" ){
+        //console.log("going to fix: " + require("path").resolve(path) );
+        ReplaceInFile('https://1e128.net/assets/fontawesome/css/fa5.css', "../css/fa5.css", path);
+        //console.log("fixed fa5");
+      }
+
+      if ( path == "css/appdrag.css" ){
+        ReplaceInFile('https://cf.appdrag.com/resources/builder/transparency-large (normal).png', "transparency-large%20(normal).png", path);
+        //console.log("fixed transparent placeholder");
+      }
+
+      if (path === urls[urls.length - 1].local) {
+        console.log("External deps have been downloaded");
         return;
       }
       file.close();
     });
+
   }
+}
+
+function ReplaceInFile(regexpFind, replace, filePath) {
+    var contents = fs.readFileSync(filePath, 'utf8');
+    var newContent = contents.replace(regexpFind, replace);
+    fs.writeFileSync(filePath, newContent);
 }
 
 const deployCloudBackend = async (token, appId, funcs, baseFolder) => {
