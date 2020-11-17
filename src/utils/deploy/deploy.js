@@ -789,7 +789,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "redirect404toIndex": false,
     "acceptedFiles": "*.jpg|*.png|*.mp4|*.zip|*.jpeg|*.pdf|*.docx|*.xlsx|*.pptx",
     "HSTS": false,
-    "maxRequestsPerMinutePerIP": 120,
+    "maxRequestsPerMinutePerIP": -1,
     "CORS": {
         "access-control-allow-origin": "*"
     },
@@ -808,7 +808,7 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
     "db": {
       "MYSQL": {
           "dump": `./DB/db.sql`,
-          "database": `${appId}`,
+          "database": `${appId.replace(/-/g, "_")}`,
           "host": "AUTO",
           "port": "AUTO",
           "user": "AUTO",
