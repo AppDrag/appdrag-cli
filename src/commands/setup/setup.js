@@ -14,7 +14,7 @@ const init = async (args) => {
     console.log(chalk.red('No APP_ID supplied. Please read the help below.'));
     return false;
   }
-  appID = args[0];
+  appID = args[0].toLowerCase();
   fs.writeFile('.appdrag', JSON.stringify({ appID: appID }), (err) => {
     if (err) throw err;
     console.log(chalk.green(`Config file successfully written, you won't need to specify your appID when pushing from this directory.`));
