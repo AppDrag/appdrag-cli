@@ -155,7 +155,7 @@ const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
         path = `${currentPath}/${files[x].path}`;
       }
       if (files[x].type == 'FOLDER') {
-        if (files[x].path  == 'CloudBackend') {
+        if (path  == 'CloudBackend/api' || path  == 'CloudBackend/code') {
           continue;
         }
         let newFiles = await isFolder(token, appId, files[x], path);
