@@ -39,7 +39,11 @@ Usage  : `appdrag command <args> [-options]`
 
    **-e [SUFFIX]**
    
-   (fs pull specific) Exclude files with the specified suffix from bein pulled.')
+   (fs pull specific) Exclude files with the specified suffix from bein pulled.
+
+   **--skip-existing-files**
+   
+   (fs pull specific) Skip files already existing in your filesystem.
 
 
 Available commands :

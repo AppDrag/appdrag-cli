@@ -96,6 +96,7 @@ const help = () => {
   console.log(chalk.cyan('-t [token]'),': Input your token directly in the command line instead of using', chalk.yellow('login'), '.');
   console.log(chalk.cyan('-i [suffix]'),': (',chalk.yellow('fs pull'), 'specific) Only pulls files with the specified suffix.');
   console.log(chalk.cyan('-e [suffix]'),': (',chalk.yellow('fs pull'), 'specific) Exclude files with the specified suffix.');
+  console.log(chalk.cyan('--skip-existing-files'),': (',chalk.yellow('fs pull'), 'specific) Skip files already existing in your filesystem.');
   console.log(chalk.bold('Available commands:'));
   console.log(chalk.blue('\n-- Setup'));
   console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')

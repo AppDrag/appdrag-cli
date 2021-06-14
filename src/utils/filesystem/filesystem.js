@@ -146,7 +146,7 @@ const getDirectoryListing = async (token, appId, pathToPull) => {
   }
 }
 
-const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
+const parseDirectory =  async (token, appId, files, lastfile, currentPath, argOpts) => {
     for (var x = 0; x < files.length; x++) {
       let path;
       if (currentPath === '') {
@@ -160,9 +160,16 @@ const parseDirectory =  async (token, appId, files, lastfile, currentPath) => {
         }
         let newFiles = await isFolder(token, appId, files[x], path);
         if (newFiles.length > 0) {
-          await parseDirectory(token, appId, newFiles, lastfile, path);
+          await parseDirectory(token, appId, newFiles, lastfile, path, argOpts);
         }
       } else {
+        
+        if (argOpts && argOpts['skip-existing-files'] === true) {
+          if (fs.existsSync(path)) {
+            console.log(chalk.yellow(`skipped : ${path}`));
+            return ;
+          }
+        }
         await downloadFile(path, appId);
       }
     }
