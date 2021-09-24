@@ -1,7 +1,7 @@
 {
   "name": "appdrag",
   "bin": "./src/index.js",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "",
   "main": "src/index.js",
   "scripts": {

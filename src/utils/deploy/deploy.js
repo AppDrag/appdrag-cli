@@ -853,7 +853,9 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
           outputColumns: JSON.parse(func.outputColumns),
           mappingColumns: JSON.parse(func.mappingColumns),
           sourceCode: func.sourceCode,
-          isPrivate: func.isPrivate
+          isPrivate: func.isPrivate,
+          appdrag_function_id: func.id,
+          lastUpdate: func.lastUpdate
       };
       if (func.envVars) {
             try{
