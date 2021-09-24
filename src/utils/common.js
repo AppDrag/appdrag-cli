@@ -89,7 +89,7 @@ const help = () => {
       'AppDrag'
     )
   );
-  console.log(chalk.underline('appdrag v1.5.3'));
+  console.log(chalk.underline('appdrag v1.5.4'));
   console.log(chalk.bold('Usage'), ': appdrag', chalk.yellow('command'), chalk.gray('<args>'), chalk.cyan('-options'));
   console.log(chalk.bold('\nOptions:'));
   console.log(chalk.cyan('-a [appId]'),': Input your appId directly in the command line instead of using', chalk.yellow('init'), '.');
@@ -132,7 +132,10 @@ const downloadFile = async (path, appId) => {
   let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
     method: 'GET'
   });
-  if (!response.ok) console.log(`${response.statusText}`);
+  if (!response.ok) {
+      console.log("Unable to download: " + `https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`);
+      console.log(`${response.statusText}`);
+  }
   else {
     try {
       await streamPipeline(response.body, file);
