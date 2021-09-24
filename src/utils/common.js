@@ -89,7 +89,7 @@ const help = () => {
       'AppDrag'
     )
   );
-  console.log(chalk.underline('appdrag v1.5.5'));
+  console.log(chalk.underline('appdrag v1.5.6'));
   console.log(chalk.bold('Usage'), ': appdrag', chalk.yellow('command'), chalk.gray('<args>'), chalk.cyan('-options'));
   console.log(chalk.bold('\nOptions:'));
   console.log(chalk.cyan('-a [appId]'),': Input your appId directly in the command line instead of using', chalk.yellow('init'), '.');
