@@ -662,7 +662,15 @@ const writeDeleteVSQLFile = (functionObj, filePath) => {
 };
 
 const writeSQLFile = (functionObj, filePath) => {
-  fs.writeFileSync(`./${filePath}/${functionObj.name}.sql`, functionObj.sourceCode);
+  try{
+    fs.writeFileSync(`./${filePath}/${functionObj.name}.sql`, functionObj.sourceCode);
+  }
+  catch(ex){
+    console.log("error for function: " + functionObj.name);
+    console.log(functionObj.sourceCode);
+    console.log(ex);
+  }
+  
   return;
 };
 
