@@ -835,6 +835,15 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
       } else {
         pathToFunction = `/${func.name}`;
       }
+
+      var libs = [];
+      try{
+          libs = JSON.parse(func.libs);
+      }
+      catch(ex){
+          
+      }
+
       let pathToFolder = pathToFunction.split('/').slice(0,-1).join('/') + '/';
       object.apiEndpoints[`/api${pathToFunction}`] = { 
           src:`./api${pathToFolder}`,
@@ -855,8 +864,10 @@ const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
           sourceCode: func.sourceCode,
           isPrivate: func.isPrivate,
           appdrag_function_id: func.id,
-          lastUpdate: func.lastUpdate
+          lastUpdate: func.lastUpdate,
+          libs: libs
       };
+
       if (func.envVars) {
             try{
                 object.apiEndpoints[`/api${pathToFunction}`].envVars = JSON.parse(func.envVars);
