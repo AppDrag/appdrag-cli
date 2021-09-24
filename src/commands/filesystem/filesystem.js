@@ -93,7 +93,7 @@ const pullFilesystem = async (args, argOpts) => {
     return;
   }
   let lastfile = files[files.length - 1].path;
-  await parseDirectory(token, appId, files, lastfile, '');
+  await parseDirectory(token, appId, files, lastfile, '', argOpts);
   return true;
 };
 
