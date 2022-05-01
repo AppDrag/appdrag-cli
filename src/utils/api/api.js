@@ -206,7 +206,11 @@ const pushFunctions = async (appId, token, currFolder, basePath, folders) => {
       let response = await restoreCloudBackendFunction(appId, token, folder);
       if (response.status == "OK") {
         fs.unlinkSync(zipPath);
-        console.log(chalk.green(`${folder} has been updated !`));
+        if (response.skipped) {
+          console.log(chalk.yellow(`${folder} has been skipped !`));
+        } else {
+          console.log(chalk.green(`${folder} has been updated !`));
+        }
       } else {
         console.log(chalk.green(`Error updating ${folder}.`));
       }
