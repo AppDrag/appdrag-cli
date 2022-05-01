@@ -123,3 +123,7 @@ Import API Functions from project A:
 Push API Functions to production project B:
 
 `appdrag -a prod-project-b -t USER_API_TOKEN api push`
+
+Up to date functions on the production project won't be updated if their last update date are greater or equal to the ones on the dev project on AppDrag.
+If you do changes locally, don't forget to push it on the dev project before pushing to the production, if not, updates will be skipped.
+
