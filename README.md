@@ -111,3 +111,19 @@ Our CLI will create a zip of our folder and push it to the root of your appdrag 
 **Pushing specific folder from your local files into a specific folder in your project**
 
 ``appdrag fs push YOUR_FOLDER DESTINATION_FOLDER``
+
+### Setting up continuous delivery from development project A to production project B
+
+
+Import API Functions from project A:
+
+`appdrag -a dev-project-a -t USER_API_TOKEN api pull`
+
+
+Push API Functions to production project B:
+
+`appdrag -a prod-project-b -t USER_API_TOKEN api push`
+
+Up to date functions on the production project won't be updated if their last update date are greater or equal to the ones on the dev project on AppDrag.
+If you do changes locally, don't forget to push it on the dev project before pushing to the production, if not, updates will be skipped.
+
