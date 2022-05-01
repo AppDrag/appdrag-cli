@@ -235,10 +235,7 @@ const restoreCloudBackendFunction = async (appId, token, folder) => {
     },
     body: new URLSearchParams(data),
   };
-  let response = await fetch(
-    "http://api-dev.appdrag.com/CloudBackend.aspx",
-    opts
-  );
+  let response = await fetch("https://api.appdrag.com/CloudBackend.aspx", opts);
   return await response.json();
 };
 
