@@ -15,7 +15,7 @@
     "chalk": "^3.0.0",
     "clear": "^0.1.0",
     "cli-spinner": "^0.2.10",
-    "configstore": "^5.0.0",
+    "configstore": "^6.0.0",
     "crypto-js": "^3.1.9-1",
     "form-data": "^3.0.0",
     "inquirer": "^7.0.3",
