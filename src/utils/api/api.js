@@ -125,20 +125,22 @@ const apiJson = (api, appId) => {
       "/": [],
     },
   };
-  api.forEach((func) => {
-    if (func.type === "FOLDER") {
-      finalObj.funcs[func.name] = {
-        id: func.id,
-      };
-    }
-  });
+  // api.forEach((func) => {
+  //   if (func.type === "FOLDER") {
+  //     finalObj.funcs[func.name] = {
+  //       id: func.id,
+  //     };
+  //   }
+  // });
   api.forEach((func) => {
     if (func.type !== "FOLDER") {
       if (func.parentID !== -1) {
         let folder = api.find((elem) => {
           return elem.id === func.parentID;
         }).name;
-        finalObj.funcs[folder] = [];
+        if (!finalObj.funcs[folder]) {
+          finalObj.funcs[folder] = [];
+        }
         finalObj.funcs[folder].push({
           id: func.id,
           name: func.name,
