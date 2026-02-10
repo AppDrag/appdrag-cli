@@ -412,68 +412,90 @@ const flattenFunctionList = (functions) => {
 };
 
 const downloadAndWriteFunction = async (token, appId, path, functionObj, apiKey) => {
-  let filePath = `./${path}/${appId}_${functionObj.id}.zip`;
-  let data = {
-    command: 'CloudAPIExportFile',
-    token: token,
-    appID: appId,
-    file: 'main.js',
-    functionID: functionObj.id,
-  };
-  if (functionObj.parentID !== -1) {
-    data.parentID = functionObj.parentID;
-  }
+  try {
+    let filePath = `./${path}/${appId}_${functionObj.id}.zip`;
+    let data = {
+      command: 'CloudAPIExportFile',
+      token: token,
+      appID: appId,
+      file: 'main.js',
+      functionID: functionObj.id,
+    };
+    if (functionObj.parentID !== -1) {
+      data.parentID = functionObj.parentID;
+    }
 
-  let file = fs.createWriteStream(filePath);
-  let url = await getFunctionURL(data);
-  let response = await fetch(url, {
-    method: 'GET'
-  });
-  response.body.pipe(file);
-  file.on('close', () => {
-    fs.createReadStream(filePath)
-    .pipe(unzipper.Extract({path: path}))
-    .on('close', () => {
-      console.log(chalk.green(`Finished writing "${functionObj.name}"`));
-      fs.access(`${path}/main.js`, (err) => {
-        if (err) {
-          return;
-        } else {
-          fs.renameSync(`${path}/main.js`, `${path}/${functionObj.name}.js`);
-        }
-      });
-      fs.access(`${path}/main.py`, (err) => {
-        if (err) {
-          return;
-        } else {
-          fs.renameSync(`${path}/main.py`, `${path}/${functionObj.name}.py`);
-        }
-      });
-      fs.access(`${path}/backup.csv`, (err) => {
-        if (err) {
-          return;
-        } else {
-          fs.unlinkSync(`${path}/backup.csv`);
-        }
-      });
-      fs.access(`${path}/backup.json`, (err) => {
-        if (err) {
-          return;
-        } else {
-          fs.unlinkSync(`${path}/backup.json`);
-        }
-      });
-      fs.access(`${path}/main.zip`, (err) => {
-        if (err) {
-          return;
-        } else {
-          fs.unlinkSync(`${path}/main.zip`);
-        }
-      });
-    }).on('finish', () => {      
-      fs.unlinkSync(filePath);
+    let url = await getFunctionURL(data);
+    if (!url) {
+      console.log(chalk.red(`Failed to get download URL for function "${functionObj.name}", skipping...`));
+      return false;
+    }
+
+    let file = fs.createWriteStream(filePath);
+    let response = await fetch(url, {
+      method: 'GET'
     });
-  });
+
+    if (!response.ok) {
+      console.log(chalk.red(`Failed to download function "${functionObj.name}": ${response.statusText}`));
+      return false;
+    }
+
+    response.body.pipe(file);
+    file.on('close', () => {
+      fs.createReadStream(filePath)
+      .pipe(unzipper.Extract({path: path}))
+      .on('close', () => {
+        console.log(chalk.green(`Finished writing "${functionObj.name}"`));
+        fs.access(`${path}/main.js`, (err) => {
+          if (err) {
+            return;
+          } else {
+            fs.renameSync(`${path}/main.js`, `${path}/${functionObj.name}.js`);
+          }
+        });
+        fs.access(`${path}/main.py`, (err) => {
+          if (err) {
+            return;
+          } else {
+            fs.renameSync(`${path}/main.py`, `${path}/${functionObj.name}.py`);
+          }
+        });
+        fs.access(`${path}/backup.csv`, (err) => {
+          if (err) {
+            return;
+          } else {
+            fs.unlinkSync(`${path}/backup.csv`);
+          }
+        });
+        fs.access(`${path}/backup.json`, (err) => {
+          if (err) {
+            return;
+          } else {
+            fs.unlinkSync(`${path}/backup.json`);
+          }
+        });
+        fs.access(`${path}/main.zip`, (err) => {
+          if (err) {
+            return;
+          } else {
+            fs.unlinkSync(`${path}/main.zip`);
+          }
+        });
+      }).on('finish', () => {
+        fs.unlinkSync(filePath);
+      });
+    });
+
+    file.on('error', (err) => {
+      console.log(chalk.red(`Error writing function "${functionObj.name}": ${err.message}`));
+    });
+
+    return true;
+  } catch (err) {
+    console.log(chalk.red(`Error downloading function "${functionObj.name}": ${err.message}`));
+    return false;
+  }
 };
 
 const writeSelectVSQLFile = (functionObj, filePath) => {
@@ -744,113 +766,250 @@ const writeSQLFile = (functionObj, filePath) => {
 };
 
 const getFunctionURL = async (data) => {
-  let opts = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    body: new URLSearchParams(data).toString()
-  };
-  let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
-  res = await res.json();
-  return res.url;
+  try {
+    let opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+      body: new URLSearchParams(data).toString()
+    };
+    let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
+
+    // Try to parse as JSON
+    const text = await res.text();
+    let jsonRes;
+    try {
+      jsonRes = JSON.parse(text);
+    } catch (parseErr) {
+      console.log(chalk.red(`API returned non-JSON response for function export`));
+      console.log(chalk.yellow(`Response preview: ${text.substring(0, 200)}...`));
+      return null;
+    }
+
+    if (!jsonRes.url) {
+      console.log(chalk.red(`API did not return a valid URL for function export`));
+      return null;
+    }
+    return jsonRes.url;
+  } catch (err) {
+    console.log(chalk.red(`Error getting function URL: ${err.message}`));
+    return null;
+  }
 };
 
 const getApiKey = async (token, appId) => {
-  let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', {
-    method:'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    body: new URLSearchParams({command:'CloudDBGetSecretKey', token: token, appID: appId})
-  });
-  res =  await res.json();
-  return res.secret_key;
+  try {
+    let res = await fetch('https://api.appdrag.com/CloudBackend.aspx', {
+      method:'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+      body: new URLSearchParams({command:'CloudDBGetSecretKey', token: token, appID: appId})
+    });
+
+    // Try to parse as JSON
+    const text = await res.text();
+    let jsonRes;
+    try {
+      jsonRes = JSON.parse(text);
+    } catch (parseErr) {
+      console.log(chalk.red(`API returned non-JSON response when getting API key`));
+      console.log(chalk.yellow(`Response preview: ${text.substring(0, 200)}...`));
+      return null;
+    }
+
+    if (!jsonRes.secret_key) {
+      console.log(chalk.yellow(`Warning: Could not retrieve API key`));
+      return null;
+    }
+    return jsonRes.secret_key;
+  } catch (err) {
+    console.log(chalk.red(`Error getting API key: ${err.message}`));
+    return null;
+  }
 };
 
 const downloadDb = async (appId, token, folder) => {
-  let data = {
-    command: 'CloudDBExportFile',
-    token: token,
-    appID: appId,
-  };
-  var opts = {
-    method: 'POST', // *GET, POST, PUT, DELETE, etc.
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    body: new URLSearchParams(data),
-  };
-  let databaseUrl = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
-  databaseUrl = await databaseUrl.json();
-  if (databaseUrl.status !== 'OK') {
-    let version = await getDbVersions(appId, token);
-    if (!version) {
+  try {
+    let data = {
+      command: 'CloudDBExportFile',
+      token: token,
+      appID: appId,
+    };
+    var opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+      body: new URLSearchParams(data),
+    };
+    let response = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
+
+    // Try to parse as JSON
+    const text = await response.text();
+    let databaseUrl;
+    try {
+      databaseUrl = JSON.parse(text);
+    } catch (parseErr) {
+      console.log(chalk.red(`API returned non-JSON response when exporting database`));
+      console.log(chalk.yellow(`Response preview: ${text.substring(0, 200)}...`));
+      console.log(chalk.yellow(`Skipping database export...`));
       return;
     }
-    await downloadLastDbVersion(appId, token, version, folder);
-    return;
+
+    if (databaseUrl.status !== 'OK') {
+      let version = await getDbVersions(appId, token);
+      if (!version) {
+        console.log(chalk.yellow(`Could not retrieve database version, skipping database export...`));
+        return;
+      }
+      await downloadLastDbVersion(appId, token, version, folder);
+      return;
+    }
+
+    if (!databaseUrl.url) {
+      console.log(chalk.red(`API did not return a valid database URL`));
+      console.log(chalk.yellow(`Skipping database export...`));
+      return;
+    }
+
+    databaseUrl = databaseUrl.url;
+    let file = fs.createWriteStream(`${folder}/DB/db.sql`);
+    let dbResponse = await fetch(databaseUrl, {
+      method: 'GET',
+    });
+
+    if (!dbResponse.ok) {
+      console.log(chalk.red(`Failed to download database: ${dbResponse.statusText}`));
+      return;
+    }
+
+    dbResponse.body.pipe(file);
+    file.on('close', () => {
+      console.log(chalk.green(`Done downloading database !`));
+    });
+    file.on('error', (err) => {
+      console.log(chalk.red(`Error writing database file: ${err.message}`));
+    });
+  } catch (err) {
+    console.log(chalk.red(`Error downloading database: ${err.message}`));
+    console.log(chalk.yellow(`Skipping database export...`));
   }
-  databaseUrl = databaseUrl.url;
-  let file = fs.createWriteStream(`${folder}/DB/db.sql`);
-  let response = await fetch(databaseUrl, {
-    method: 'GET',
-  });
-  response.body.pipe(file);
-  file.on('close', () => {
-    console.log(chalk.green(`Done downloading database !`));
-  });
 };
 
 const getDbVersions = async (appId, token) => {
-  let data = {
-    command: 'GetFileVersions',
-    token: token,
-    appID: appId,
-    path: 'CloudBackend/db/backup.sql',
-  };
-  var opts = {
-    method: 'POST', // *GET, POST, PUT, DELETE, etc.
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    body: new URLSearchParams(data),
-  };
-  let fileVersions = await fetch ('https://api.appdrag.com/api.aspx', opts);
-  fileVersions = await fileVersions.json();
-  if (fileVersions.status === 'KO') {
-    if (tokenObj.method == 'login') {
-      let token_ref = config.get('refreshToken');
-      await refreshToken(token_ref);
-      fileVersions = await fetch ('https://api.appdrag.com/api.aspx', opts);
-      fileVersions = await fileVersions.json();
-      if (fileVersions.status == 'KO') {
-        console.log(chalk.red('Invalid appId provided and/or please login again.'));
+  try {
+    let data = {
+      command: 'GetFileVersions',
+      token: token,
+      appID: appId,
+      path: 'CloudBackend/db/backup.sql',
+    };
+    var opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+      body: new URLSearchParams(data),
+    };
+    let response = await fetch('https://api.appdrag.com/api.aspx', opts);
+
+    // Try to parse as JSON
+    let text = await response.text();
+    let fileVersions;
+    try {
+      fileVersions = JSON.parse(text);
+    } catch (parseErr) {
+      console.log(chalk.red(`API returned non-JSON response when getting DB versions`));
+      console.log(chalk.yellow(`Response preview: ${text.substring(0, 200)}...`));
+      return false;
+    }
+
+    if (fileVersions.status === 'KO') {
+      if (tokenObj.method == 'login') {
+        let token_ref = config.get('refreshToken');
+        await refreshToken(token_ref);
+        response = await fetch('https://api.appdrag.com/api.aspx', opts);
+
+        text = await response.text();
+        try {
+          fileVersions = JSON.parse(text);
+        } catch (parseErr) {
+          console.log(chalk.red('Invalid appId provided and/or please login again.'));
+          return false;
+        }
+
+        if (fileVersions.status == 'KO') {
+          console.log(chalk.red('Invalid appId provided and/or please login again.'));
+          return false;
+        }
+      } else {
         return false;
       }
     }
+
+    if (!fileVersions[0] || !fileVersions[0].VersionId) {
+      console.log(chalk.yellow(`No database versions found`));
+      return false;
+    }
+
+    let versionId = fileVersions[0].VersionId;
+    return versionId;
+  } catch (err) {
+    console.log(chalk.red(`Error getting database versions: ${err.message}`));
+    return false;
   }
-  let versionId = fileVersions[0].VersionId;
-  return versionId;
 };
 
 const downloadLastDbVersion = async (appId, token, version, folder) => {
-  let file = fs.createWriteStream(`${folder}/DB/db.sql`);
-  let data = {
-    command: 'CloudDBDownloadRestore',
-    token: token,
-    appID: appId,
-    version: version,
-  };
-  var opts = {
-    method: 'POST', // *GET, POST, PUT, DELETE, etc.
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    body: new URLSearchParams(data),
-  };
-  let dbUrl = await fetch ('https://api.appdrag.com/CloudBackend.aspx', opts);
-  dbUrl = await dbUrl.json();
-  if (dbUrl.status === 'KO') {
-    return;
+  try {
+    let file = fs.createWriteStream(`${folder}/DB/db.sql`);
+    let data = {
+      command: 'CloudDBDownloadRestore',
+      token: token,
+      appID: appId,
+      version: version,
+    };
+    var opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+      body: new URLSearchParams(data),
+    };
+    let apiResponse = await fetch('https://api.appdrag.com/CloudBackend.aspx', opts);
+
+    // Try to parse as JSON
+    const text = await apiResponse.text();
+    let dbUrl;
+    try {
+      dbUrl = JSON.parse(text);
+    } catch (parseErr) {
+      console.log(chalk.red(`API returned non-JSON response when downloading DB version`));
+      console.log(chalk.yellow(`Response preview: ${text.substring(0, 200)}...`));
+      return;
+    }
+
+    if (dbUrl.status === 'KO') {
+      console.log(chalk.yellow(`Could not retrieve database backup URL`));
+      return;
+    }
+
+    if (!dbUrl.url) {
+      console.log(chalk.red(`API did not return a valid database backup URL`));
+      return;
+    }
+
+    let response = await fetch(dbUrl.url, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      console.log(chalk.red(`Failed to download database backup: ${response.statusText}`));
+      return;
+    }
+
+    response.body.pipe(file);
+    file.on('close', () => {
+      console.log(chalk.green(`Done downloading database !`));
+    });
+    file.on('error', (err) => {
+      console.log(chalk.red(`Error writing database file: ${err.message}`));
+    });
+  } catch (err) {
+    console.log(chalk.red(`Error downloading database version: ${err.message}`));
   }
-  let response = await fetch (dbUrl.url, {
-    method: 'GET',
-  });
-  response.body.pipe(file);
-  file.on('close', () => {
-    console.log(chalk.green(`Done downloading database !`));
-  });
 };
 
 const appConfigJson = (appId, funcJson, baseFolder, apiKey) => {
