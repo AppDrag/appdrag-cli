@@ -97,6 +97,8 @@ const help = () => {
   console.log(chalk.cyan('-i [suffix]'),': (',chalk.yellow('fs pull'), 'specific) Only pulls files with the specified suffix.');
   console.log(chalk.cyan('-e [suffix]'),': (',chalk.yellow('fs pull'), 'specific) Exclude files with the specified suffix.');
   console.log(chalk.cyan('--skip-existing-files'),': (',chalk.yellow('fs pull'), 'specific) Skip files already existing in your filesystem.');
+  console.log(chalk.cyan('--skip-existing'),': (',chalk.yellow('export'), 'specific) Skip files already existing in your filesystem.');
+  console.log(chalk.cyan('--batch-size [number]'),': (',chalk.yellow('export'), 'specific) Number of files to download in parallel (default: 50).');
   console.log(chalk.bold('Available commands:'));
   console.log(chalk.blue('\n-- Setup'));
   console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
@@ -128,21 +130,30 @@ const refreshToken = async (refreshToken) => {
 };
 
 const downloadFile = async (path, appId) => {
-  let file = fs.createWriteStream(path);
-  let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
-    method: 'GET'
-  });
-  if (!response.ok) {
-      console.log("Unable to download: " + `https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`);
-      console.log(`${response.statusText}`);
-  }
-  else {
-    try {
-      await streamPipeline(response.body, file);
-      console.log(chalk.green(`done writing : ${path}`));
-    } catch (err) {
-      console.log(chalk.red(`${err}`));
+  try {
+    let file = fs.createWriteStream(path);
+    let response = await fetch(`https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/${appId}/${encodeURI(path)}`, {
+      method: 'GET'
+    });
+    if (!response.ok) {
+      console.log(chalk.yellow(`Unable to download: ${path}`));
+      console.log(chalk.yellow(`  Status: ${response.statusText}`));
+      return false;
     }
+    else {
+      try {
+        await streamPipeline(response.body, file);
+        console.log(chalk.green(`done writing : ${path}`));
+        return true;
+      } catch (err) {
+        console.log(chalk.red(`Error writing ${path}: ${err.message}`));
+        return false;
+      }
+    }
+  } catch (err) {
+    console.log(chalk.red(`Error downloading ${path}: ${err.message}`));
+    console.log(chalk.yellow(`  Skipping file and continuing...`));
+    return false;
   }
 };
 

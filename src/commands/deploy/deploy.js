@@ -6,7 +6,7 @@ const fs = require('fs');
 const chalk = require('chalk');
 const util = require('util');
 
-const deployFilesystem = async (args, appId, token) => {
+const deployFilesystem = async (args, appId, token, argOpts = {}) => {
   if (args[0]) {
     if (!(fs.existsSync(args[0]))) {
       fs.mkdirSync(args[0]);
@@ -33,9 +33,11 @@ const deployFilesystem = async (args, appId, token) => {
     }
   }
   let lastfile = files[files.length - 1].path;
-  await parseDirectory(token, appId, files, lastfile, '');
+  const batchSize = argOpts['batch-size'] || 50;
+  const skipExisting = argOpts['skip-existing'] || false;
+  await parseDirectory(token, appId, files, lastfile, '', skipExisting, batchSize);
   parseHtmlFiles(appId);
-  await downloadResources();
+  await downloadResources(skipExisting);
 
   return true;
 }
@@ -94,7 +96,7 @@ const exportProject = async (args, argOpts) => {
     return;
   }
   let token = tokenObj.token;
-  let isDeployed = await deployFilesystem(args, appId, token);
+  let isDeployed = await deployFilesystem(args, appId, token, argOpts);
   if (!isDeployed) {
     return;
   }

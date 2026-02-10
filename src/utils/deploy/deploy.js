@@ -6,8 +6,11 @@ const chalk = require('chalk');
 const { downloadFile } = require('../../utils/common');
 
 
-const parseDirectory = (token, appId, files, lastfile, currentPath) => {
+const parseDirectory = (token, appId, files, lastfile, currentPath, skipExisting = false, batchSize = 50) => {
   return new Promise( async (resolve, reject) => {
+    const filesToDownload = [];
+
+    // First pass: collect files and process folders
     for (var x = 0; x < files.length; x++) {
       let path;
       if (currentPath === '') {
@@ -22,23 +25,54 @@ const parseDirectory = (token, appId, files, lastfile, currentPath) => {
         let newFiles = await isFolder(token, appId, files[x], path);
         if (newFiles.length > 0) {
           let newLast = path + '/' + newFiles[newFiles.length - 1].path;
-          await parseDirectory(token, appId, newFiles, newLast, path);
+          await parseDirectory(token, appId, newFiles, newLast, path, skipExisting, batchSize);
         }
       } else {
-        const regex = RegExp(/(.html|.js|.xml|.css|.txt)$/gm);
-        if (fs.existsSync(path) && !(regex.test(path))) {
-          if (x+1 === files.length) {
-            resolve();
-          }
-          else continue;
-        } else {
-          await downloadFile(path, appId);
+        // Check if we should skip this file
+        if (skipExisting && fs.existsSync(path)) {
+          console.log(chalk.gray(`Skipping existing file: ${path}`));
+          continue;
         }
-            if (path === lastfile) {
-              resolve();
-            }
+
+        // For backward compatibility: skip non-text files if they exist
+        const regex = RegExp(/(.html|.js|.xml|.css|.txt)$/gm);
+        if (!skipExisting && fs.existsSync(path) && !(regex.test(path))) {
+          continue;
+        }
+
+        filesToDownload.push(path);
       }
     }
+
+    // Second pass: download files in batches
+    console.log(chalk.blue(`Downloading ${filesToDownload.length} files in batches of ${batchSize}...`));
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (let i = 0; i < filesToDownload.length; i += batchSize) {
+      const batch = filesToDownload.slice(i, i + batchSize);
+      console.log(chalk.yellow(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(filesToDownload.length/batchSize)} (${batch.length} files)`));
+
+      // Use Promise.allSettled to continue even if some downloads fail
+      const results = await Promise.allSettled(batch.map(path => downloadFile(path, appId)));
+
+      // Count successes and failures
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value === true) {
+          successCount++;
+        } else {
+          failureCount++;
+        }
+      });
+    }
+
+    // Summary
+    if (failureCount > 0) {
+      console.log(chalk.yellow(`\nDownload summary: ${successCount} succeeded, ${failureCount} failed (skipped)`));
+    } else {
+      console.log(chalk.green(`\nAll ${successCount} files downloaded successfully!`));
+    }
+
     resolve();
   });
 };
@@ -126,7 +160,7 @@ const parseHtmlFiles = (appId) => {
 
 }
 
-const downloadResources = async () => {
+const downloadResources = async (skipExisting = false) => {
   console.log(chalk.yellowBright(`Downloading online resources...`));
   if (!fs.existsSync('js')) {
     fs.mkdirSync('js');
@@ -243,30 +277,65 @@ const downloadResources = async () => {
   for (let x = 0; x < urls.length ;x++) {
 
     let path = urls[x].local;
-    let file = fs.createWriteStream(path, { encoding: 'utf8' });
-    let response = await fetch(urls[x].url, {
-      method: 'GET',
-    });
-    response.body.pipe(file);
-    file.on('finish', () => {
 
-      if ( path == "js/appdrag.js" ){
-        //console.log("going to fix: " + require("path").resolve(path) );
-        ReplaceInFile('https://1e128.net/assets/fontawesome/css/fa5.css', "../css/fa5.css", path);
-        //console.log("fixed fa5");
-      }
-
-      if ( path == "css/appdrag.css" ){
-        ReplaceInFile('https://cf.appdrag.com/resources/builder/transparency-large (normal).png', "transparency-large%20(normal).png", path);
-        //console.log("fixed transparent placeholder");
-      }
-
+    // Skip if file exists and skipExisting is enabled
+    if (skipExisting && fs.existsSync(path)) {
+      console.log(chalk.gray(`Skipping existing resource: ${path}`));
       if (path === urls[urls.length - 1].local) {
-        console.log("External deps have been downloaded");
+        console.log("External deps check completed");
         return;
       }
-      file.close();
-    });
+      continue;
+    }
+
+    try {
+      let file = fs.createWriteStream(path, { encoding: 'utf8' });
+      let response = await fetch(urls[x].url, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        console.log(chalk.yellow(`Failed to download resource: ${urls[x].url} (${response.statusText})`));
+        if (path === urls[urls.length - 1].local) {
+          console.log("External deps download completed (with some failures)");
+          return;
+        }
+        continue;
+      }
+
+      response.body.pipe(file);
+      file.on('finish', () => {
+
+        if ( path == "js/appdrag.js" ){
+          //console.log("going to fix: " + require("path").resolve(path) );
+          ReplaceInFile('https://1e128.net/assets/fontawesome/css/fa5.css', "../css/fa5.css", path);
+          //console.log("fixed fa5");
+        }
+
+        if ( path == "css/appdrag.css" ){
+          ReplaceInFile('https://cf.appdrag.com/resources/builder/transparency-large (normal).png', "transparency-large%20(normal).png", path);
+          //console.log("fixed transparent placeholder");
+        }
+
+        if (path === urls[urls.length - 1].local) {
+          console.log("External deps have been downloaded");
+          return;
+        }
+        file.close();
+      });
+
+      file.on('error', (err) => {
+        console.log(chalk.red(`Error writing resource ${path}: ${err.message}`));
+      });
+
+    } catch (err) {
+      console.log(chalk.red(`Error downloading resource ${urls[x].url}: ${err.message}`));
+      if (path === urls[urls.length - 1].local) {
+        console.log("External deps download completed (with some failures)");
+        return;
+      }
+      continue;
+    }
 
   }
 }
