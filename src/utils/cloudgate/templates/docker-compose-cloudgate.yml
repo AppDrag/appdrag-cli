@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  # MySQL Database for app
+  app-mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: apppassword123
+      MYSQL_DATABASE: app_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: apppassword123
+    ports:
+      - "172.17.0.1:13306:3306"
+    volumes:
+      - ./db/mysql-data:/var/lib/mysql
+      - ./DB/db.sql:/docker-entrypoint-initdb.d/01-import.sql
+    command: --default-authentication-plugin=mysql_native_password --sql_mode=""
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 40s
+
+  # phpMyAdmin for database management
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: app-mysql
+      PMA_PORT: 3306
+      PMA_USER: app_user
+      PMA_PASSWORD: apppassword123
+      MYSQL_ROOT_PASSWORD: apppassword123
+    ports:
+      - "172.17.0.1:18080:80"
+    depends_on:
+      - app-mysql
+
+  # CloudGate - Native Node.js Server (replaces Express.js app)
+  app-cloudgate:
+    build: .
+    restart: always
+
+    ports:
+      - "172.17.0.1:3333:3000"
+    volumes:
+      - ./:/app # Single volume mount as specified by lead developer
+    environment:
+      # Database connection for CloudGate API functions
+      DB_HOST: app-mysql
+      DB_PORT: 3306
+      DB_NAME: app_db
+      DB_USER: app_user
+      DB_PASSWORD: apppassword123
+
+      # SMTP Configuration for Elestio
+      SMTP_HOST: 172.17.0.1
+      SMTP_PORT: 25
+      SMTP_SECURE: false
+      SMTP_AUTH: false
+      # Note: SMTP_FROM will be imposed by Elestio SMTP server
+
+# CloudGate architecture: 3 containers needed
+# - MySQL for database with auto-import of DB/db.sql
+# - phpMyAdmin for database management (port 18080)
+# - CloudGate for static files + API functions execution

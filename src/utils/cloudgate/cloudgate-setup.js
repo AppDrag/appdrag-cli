@@ -6,7 +6,7 @@ class CloudGateSetup {
     constructor(projectPath, appId) {
         this.projectPath = projectPath;
         this.appId = appId;
-        this.migratorPath = '/Users/wawa/Downloads/migrate-appdrag/appdrag-migrator';
+        this.templatesPath = path.join(__dirname, 'templates');
     }
 
     /**
@@ -72,18 +72,16 @@ class CloudGateSetup {
     async copyTemplateFiles() {
         console.log(chalk.cyan('\n📋 Copying template files...'));
 
-        const templatesDir = path.join(this.migratorPath, 'templates');
-
         // Copy docker-compose.yml
         await fs.copy(
-            path.join(templatesDir, 'docker-compose-cloudgate.yml'),
+            path.join(this.templatesPath, 'docker-compose-cloudgate.yml'),
             path.join(this.projectPath, 'docker-compose.yml')
         );
         console.log(chalk.green('✅ docker-compose.yml copied'));
 
         // Copy Dockerfile
         await fs.copy(
-            path.join(templatesDir, 'Dockerfile.cloudgate'),
+            path.join(this.templatesPath, 'Dockerfile.cloudgate'),
             path.join(this.projectPath, 'Dockerfile')
         );
         console.log(chalk.green('✅ Dockerfile copied'));
