@@ -189,6 +189,10 @@ const downloadResources = async (skipExisting = false) => {
       local: "js/appdrag.js"
   },
   {
+      url: "https://s3-eu-west-1.amazonaws.com/dev.appdrag.com/resources/js/appdrag-interceptor.js",
+      local: "js/appdrag-interceptor.js"
+  },
+  {
       url: "https://1e128.net/assets/fontawesome/webfonts/fa-light-300.eot",
       local: "webfonts/fa-light-300.eot"
   },

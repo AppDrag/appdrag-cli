@@ -1,0 +1,345 @@
+const fs = require('fs-extra');
+const path = require('path');
+const chalk = require('chalk');
+
+class CloudGateSetup {
+    constructor(projectPath, appId) {
+        this.projectPath = projectPath;
+        this.appId = appId;
+        this.migratorPath = '/Users/wawa/Downloads/migrate-appdrag/appdrag-migrator';
+    }
+
+    /**
+     * Main setup function - runs all CloudGate configuration steps
+     */
+    async setup() {
+        try {
+            console.log(chalk.cyan('\n☁️  Starting CloudGate Configuration'));
+            console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+
+            await this.generatePackageJson();
+            await this.copyTemplateFiles();
+            await this.generateDeploymentFiles();
+            await this.postProcessAppConfig();
+            await this.postProcessDatabaseUrls();
+            await this.postProcessDatasourceMeta();
+            await this.showFinalSummary();
+
+            console.log(chalk.green('\n✅ CloudGate configuration completed successfully!'));
+        } catch (error) {
+            console.error(chalk.red('❌ CloudGate setup failed:'), error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate package.json
+     */
+    async generatePackageJson() {
+        console.log(chalk.cyan('\n📦 Generating package.json...'));
+
+        const packageJson = {
+            name: this.appId.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            version: '1.0.0',
+            description: `Migrated from AppDrag: ${this.appId}`,
+            main: 'server.js',
+            scripts: {
+                start: 'cloudgate /app',
+                dev: 'nodemon -x "cloudgate /app"',
+                test: 'echo "No tests yet" && exit 0',
+                "docker:build": "docker build -t appdrag-migration .",
+                "docker:up": "docker-compose up -d",
+                "docker:down": "docker-compose down"
+            },
+            dependencies: {
+                '@elestio/cloudgate': 'latest'
+            },
+            devDependencies: {
+                nodemon: '^3.0.1'
+            },
+            keywords: ['appdrag', 'migration', 'elestio', 'cloudgate'],
+            author: 'AppDrag Migrator',
+            license: 'MIT'
+        };
+
+        await fs.writeJson(path.join(this.projectPath, 'package.json'), packageJson, { spaces: 2 });
+        console.log(chalk.green('✅ package.json generated'));
+    }
+
+    /**
+     * Copy template files from migrator
+     */
+    async copyTemplateFiles() {
+        console.log(chalk.cyan('\n📋 Copying template files...'));
+
+        const templatesDir = path.join(this.migratorPath, 'templates');
+
+        // Copy docker-compose.yml
+        await fs.copy(
+            path.join(templatesDir, 'docker-compose-cloudgate.yml'),
+            path.join(this.projectPath, 'docker-compose.yml')
+        );
+        console.log(chalk.green('✅ docker-compose.yml copied'));
+
+        // Copy Dockerfile
+        await fs.copy(
+            path.join(templatesDir, 'Dockerfile.cloudgate'),
+            path.join(this.projectPath, 'Dockerfile')
+        );
+        console.log(chalk.green('✅ Dockerfile copied'));
+
+        // Generate .env file
+        const envContent = `# Environment Configuration
+NODE_ENV=production
+PORT=3000
+
+# Database Configuration
+DB_TYPE=mysql
+DB_HOST=app-mysql
+DB_PORT=3306
+DB_NAME=app_db
+DB_USER=app_user
+DB_PASSWORD=apppassword123
+
+# Application Settings
+APP_NAME=${this.appId}
+APP_URL=http://localhost:3000
+
+# SMTP Configuration (Elestio)
+SMTP_HOST=172.17.0.1
+SMTP_PORT=25
+SMTP_SECURE=false
+SMTP_AUTH=false
+`;
+        await fs.writeFile(path.join(this.projectPath, '.env'), envContent);
+        console.log(chalk.green('✅ .env file generated'));
+    }
+
+    /**
+     * Generate deployment files (README, .gitignore)
+     */
+    async generateDeploymentFiles() {
+        console.log(chalk.cyan('\n📝 Generating deployment files...'));
+
+        // Generate README.md
+        const readme = `# ${this.appId} - Migrated from AppDrag
+
+This project was automatically migrated from AppDrag to run with CloudGate.
+
+## Quick Start
+
+1. Environment file is ready (.env already configured)
+
+2. Start with Docker:
+   \`\`\`bash
+   docker-compose up -d
+   \`\`\`
+
+3. Access your application:
+   - Application: http://localhost:3333
+   - phpMyAdmin: http://localhost:18080
+   - MySQL: localhost:13306
+
+## Migration Details
+
+- **Database**: MySQL 8.0 (migrated from AppDrag format)
+- **Backend**: CloudGate (AppDrag CloudBackend compatible)
+- **Frontend**: Static files from AppDrag
+- **Deployment**: Docker + CloudGate
+
+## Project Structure
+
+\`\`\`
+.
+├── api/                 # API endpoints (CloudBackend)
+├── DB/                  # Database dump
+│   └── db.sql          # Auto-imported on first start
+├── public/             # Frontend files
+├── appconfig.json      # CloudGate configuration
+├── docker-compose.yml  # Docker configuration
+├── Dockerfile          # CloudGate container
+└── package.json        # Node.js dependencies
+\`\`\`
+
+## API Compatibility
+
+All AppDrag API functions are preserved and compatible with CloudGate.
+
+Generated by AppDrag CLI on ${new Date().toISOString()}
+`;
+
+        await fs.writeFile(path.join(this.projectPath, 'README.md'), readme);
+        console.log(chalk.green('✅ README.md generated'));
+
+        // Generate .gitignore
+        const gitignore = `node_modules/
+npm-debug.log*
+.npm
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+logs/
+*.log
+db/mysql-data/
+migration-state*.json
+.DS_Store
+Thumbs.db`;
+
+        await fs.writeFile(path.join(this.projectPath, '.gitignore'), gitignore);
+        console.log(chalk.green('✅ .gitignore generated'));
+    }
+
+    /**
+     * Post-process appconfig.json with MySQL credentials
+     */
+    async postProcessAppConfig() {
+        console.log(chalk.cyan('\n🔧 Updating appconfig.json with MySQL credentials...'));
+
+        const appConfigPath = path.join(this.projectPath, 'appconfig.json');
+
+        if (await fs.pathExists(appConfigPath)) {
+            const appConfig = await fs.readJson(appConfigPath);
+
+            // Update MySQL credentials
+            if (appConfig.db && appConfig.db.MYSQL) {
+                appConfig.db.MYSQL.database = 'app_db';
+                appConfig.db.MYSQL.host = 'app-mysql';
+                appConfig.db.MYSQL.port = '3306';
+                appConfig.db.MYSQL.user = 'app_user';
+                appConfig.db.MYSQL.password = 'apppassword123';
+                appConfig.db.MYSQL.apiToken = 'AUTO';
+                appConfig.db.MYSQL.apiEndpoint = '';
+
+                await fs.writeJson(appConfigPath, appConfig, { spaces: 4 });
+                console.log(chalk.green('✅ appconfig.json updated'));
+            } else {
+                console.log(chalk.yellow('⚠️ No MySQL configuration found in appconfig.json'));
+            }
+        } else {
+            console.log(chalk.yellow('⚠️ appconfig.json not found'));
+        }
+    }
+
+    /**
+     * Post-process database URLs
+     */
+    async postProcessDatabaseUrls() {
+        console.log(chalk.cyan('\n🔧 Fixing AppDrag URLs in DB/db.sql...'));
+
+        const dbSqlPath = path.join(this.projectPath, 'DB', 'db.sql');
+
+        if (await fs.pathExists(dbSqlPath)) {
+            let dbContent = await fs.readFile(dbSqlPath, 'utf8');
+
+            // Fix AppDrag URLs - remove domain and keep path
+            const originalCount = (dbContent.match(/\/\/cf\.appdrag\.com\/[^\/]+\//g) || []).length;
+
+            dbContent = dbContent
+                .replace(/\/\/cf\.appdrag\.com\/[^\/]+\//g, '/')
+                .replace(/https:\/\/cf\.appdrag\.com\/[^\/]+\//g, '/')
+                .replace(/http:\/\/cf\.appdrag\.com\/[^\/]+\//g, '/');
+
+            await fs.writeFile(dbSqlPath, dbContent);
+
+            console.log(chalk.green(`✅ Fixed ${originalCount} AppDrag URLs in DB/db.sql`));
+        } else {
+            console.log(chalk.yellow('⚠️ DB/db.sql not found, skipping URL fixing'));
+        }
+    }
+
+    /**
+     * Post-process datasource meta tags in HTML files
+     */
+    async postProcessDatasourceMeta() {
+        console.log(chalk.cyan('\n🔧 Fixing datasource meta tags in HTML files...'));
+
+        const publicPath = path.join(this.projectPath, 'public');
+        let totalFixed = 0;
+        let filesProcessed = 0;
+
+        // Find all HTML files
+        const htmlFiles = await this.findHtmlFiles(publicPath);
+
+        for (const htmlFile of htmlFiles) {
+            const content = await fs.readFile(htmlFile, 'utf8');
+
+            // Count occurrences before fixing
+            const beforeCount = (content.match(/datasource-function="\/[^"]+"/g) || []).length;
+
+            // Fix datasource function URLs - remove leading slash
+            const fixedContent = content.replace(
+                /datasource-function="\/([^"]+)"/g,
+                'datasource-function="$1"'
+            );
+
+            // Count occurrences after fixing
+            const afterCount = beforeCount - (fixedContent.match(/datasource-function="\/[^"]+"/g) || []).length;
+
+            if (afterCount > 0) {
+                await fs.writeFile(htmlFile, fixedContent);
+                totalFixed += afterCount;
+                filesProcessed++;
+            }
+        }
+
+        console.log(chalk.green(`✅ Fixed ${totalFixed} datasource meta tags in ${filesProcessed} HTML files`));
+    }
+
+    /**
+     * Helper: Find all HTML files recursively
+     */
+    async findHtmlFiles(directory) {
+        const htmlFiles = [];
+
+        if (!await fs.pathExists(directory)) {
+            return htmlFiles;
+        }
+
+        const items = await fs.readdir(directory);
+
+        for (const item of items) {
+            const fullPath = path.join(directory, item);
+            const stat = await fs.stat(fullPath);
+
+            if (stat.isDirectory()) {
+                const subFiles = await this.findHtmlFiles(fullPath);
+                htmlFiles.push(...subFiles);
+            } else if (item.toLowerCase().endsWith('.html')) {
+                htmlFiles.push(fullPath);
+            }
+        }
+
+        return htmlFiles;
+    }
+
+    /**
+     * Show final summary
+     */
+    async showFinalSummary() {
+        console.log(chalk.cyan('\n📊 CloudGate Migration Summary'));
+        console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+        console.log(chalk.green(`✅ Project: ${this.appId}`));
+        console.log(chalk.green(`✅ Location: ${this.projectPath}`));
+        console.log(chalk.green(`✅ Database: MySQL (AppDrag compatible)`));
+        console.log(chalk.green(`✅ Frontend: AppDrag structure preserved`));
+        console.log(chalk.green(`✅ Deployment: Docker + CloudGate ready`));
+
+        console.log(chalk.cyan('\n🚀 Next Steps:'));
+        console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+        console.log(chalk.yellow('1. Navigate to your project:'));
+        console.log(chalk.gray(`   cd ${this.projectPath}`));
+        console.log(chalk.yellow('2. Start the application:'));
+        console.log(chalk.gray(`   docker-compose up -d`));
+        console.log(chalk.yellow('3. Access your site:'));
+        console.log(chalk.gray(`   http://localhost:3333 (Application)`));
+        console.log(chalk.gray(`   http://localhost:18080 (phpMyAdmin)`));
+        console.log(chalk.yellow('4. Database credentials:'));
+        console.log(chalk.gray(`   Host: localhost:13306`));
+        console.log(chalk.gray(`   Database: app_db`));
+        console.log(chalk.gray(`   User: app_user`));
+        console.log(chalk.gray(`   Password: apppassword123`));
+    }
+}
+
+module.exports = CloudGateSetup;

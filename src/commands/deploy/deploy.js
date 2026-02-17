@@ -3,6 +3,7 @@ const { getFunctionsList, apiJson, writeScriptFile } = require('../../utils/api/
 const { parseDirectory, parseHtmlFiles, downloadResources, deployCloudBackend, downloadDb, appConfigJson, flattenFunctionList } = require('../../utils/deploy/deploy');
 const { setupCheck, currFolder, config, refreshToken, tokenObj } = require('../../utils/common');
 const fs = require('fs');
+const path = require('path');
 const chalk = require('chalk');
 const util = require('util');
 
@@ -96,6 +97,10 @@ const exportProject = async (args, argOpts) => {
     return;
   }
   let token = tokenObj.token;
+
+  // Store the export path for CloudGate setup
+  const exportPath = args[0] ? path.resolve(args[0]) : process.cwd();
+
   let isDeployed = await deployFilesystem(args, appId, token, argOpts);
   if (!isDeployed) {
     return;
@@ -107,6 +112,15 @@ const exportProject = async (args, argOpts) => {
   }
   await deployApi(args, appId, token);
   await deployDb(args, appId, token);
+
+  // If --cloudgate option is enabled, run CloudGate setup
+  if (argOpts.cloudgate) {
+    const CloudGateSetup = require('../../utils/cloudgate/cloudgate-setup');
+    const projectPath = path.resolve(exportPath);
+    const cloudgate = new CloudGateSetup(projectPath, appId);
+    await cloudgate.setup();
+  }
+
   return;
 }
 module.exports = { deployApi, deployFilesystem, deployDb, exportProject };

@@ -99,6 +99,7 @@ const help = () => {
   console.log(chalk.cyan('--skip-existing-files'),': (',chalk.yellow('fs pull'), 'specific) Skip files already existing in your filesystem.');
   console.log(chalk.cyan('--skip-existing'),': (',chalk.yellow('export'), 'specific) Skip files already existing in your filesystem.');
   console.log(chalk.cyan('--batch-size [number]'),': (',chalk.yellow('export'), 'specific) Number of files to download in parallel (default: 50).');
+  console.log(chalk.cyan('--cloudgate'),': (',chalk.yellow('export'), 'specific) Setup CloudGate configuration after export (Docker + MySQL).');
   console.log(chalk.bold('Available commands:'));
   console.log(chalk.blue('\n-- Setup'));
   console.log('  ', chalk.yellow('login'), '\t\t\t\t\tLogin to our service')
